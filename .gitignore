@@ -28,3 +28,4 @@ pycache/
 *.pyc
 *.pyo
 *.pyd
+.env
