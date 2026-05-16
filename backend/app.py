@@ -18,6 +18,7 @@ from typing import Optional, Dict, List, Any, Tuple, Literal
 from dataclasses import dataclass, field, asdict
 import hashlib
 import logging
+import math
 from difflib import SequenceMatcher
 from collections import defaultdict
 
@@ -47,6 +48,44 @@ ai_response_cache:    Dict[str, str]          = {}
 conversation_history: Dict[str, List[dict]]   = {}
 AI_CALL_LIMIT = 30
 
+def sanitize_for_json(obj):
+    """Recursively sanitize an object for JSON serialization.
+    Converts NaN/Infinity to None, numpy types to native Python types,
+    pandas Timestamps to ISO strings, and handles nested dicts/lists.
+    """
+    if obj is None:
+        return None
+    if isinstance(obj, bool):
+        return obj
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    if isinstance(obj, int):
+        return obj
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.floating):
+        val = float(obj)
+        return None if math.isnan(val) or math.isinf(val) else val
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+    if isinstance(obj, np.ndarray):
+        return sanitize_for_json(obj.tolist())
+    if isinstance(obj, pd.Timestamp):
+        return None if pd.isna(obj) else obj.isoformat()
+    if isinstance(obj, pd.Timedelta):
+        return None if pd.isna(obj) else str(obj)
+    if isinstance(obj, dict):
+        return {str(k): sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple, set)):
+        return [sanitize_for_json(v) for v in obj]
+    try:
+        if pd.isna(obj):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return obj
 
 @dataclass
 class AggregationSpec:
@@ -1063,6 +1102,13 @@ def detect_operation(query: str) -> str:
             r"\bnumber of\b",
             r"\bfrequency\b",
         ],
+        
+        "unique_count": [
+            r"\bunique\b",
+            r"\bdistinct\b",
+            r"\bunique count\b",
+            r"\bdistinct count\b",
+        ],
 
         "unique_count": [
             r"\bunique\b",
@@ -1196,7 +1242,47 @@ def detect_group_by(query: str, df: pd.DataFrame, meta: dict) -> Optional[str]:
                 hint
             )[0].strip()
 
-            col = find_column(hint, safe_cat, synonyms, meta, expected_type="dimension")
+            scored_cols = []
+
+            for col_candidate in safe_cat:
+                score = score_column_match(
+                    query=hint,
+                    column=col_candidate,
+                    synonyms=synonyms,
+                    meta=meta,
+                    expected_type="dimension"
+                )
+
+                # prefer lower cardinality
+                nunique = df[col_candidate].nunique()
+
+                if nunique <= 15:
+                    score += 12
+                elif nunique <= 40:
+                    score += 6
+                elif nunique > 200:
+                    score -= 15
+
+                # semantic grouping priority
+                schema_registry = meta.get("schema_registry", {})
+                score += schema_registry.get(
+                    col_candidate,
+                    {}
+                ).get("group_priority", 0) * 0.1
+
+                scored_cols.append((col_candidate, score))
+
+            scored_cols.sort(
+                key=lambda x: x[1],
+                reverse=True
+            )
+
+            col = (
+                scored_cols[0][0]
+                if scored_cols
+                and scored_cols[0][1] >= 15
+                else None
+            )
             if col:
                 return col
 
@@ -1215,14 +1301,35 @@ def detect_group_by(query: str, df: pd.DataFrame, meta: dict) -> Optional[str]:
         "channel":    ["channel", "medium", "source", "platform"],
         "brand":      ["brand", "label", "make"],
     }
+    # low-priority fallback only
+
+    best_col = None
+    best_score = 0
+
     for entity, signals in entity_map.items():
         if entity in q:
             for cat_col in safe_cat:
-                if any(s in cat_col.lower() for s in signals):
-                    return cat_col
+                score = 0
+                for s in signals:
+                    if s in cat_col.lower():
+                        score += 1
+
+                # prefer lower cardinality
+                nunique = df[cat_col].nunique()
+
+                if nunique <= 20:
+                    score += 3
+                elif nunique <= 50:
+                    score += 1
+
+                if score > best_score:
+                    best_score = score
+                    best_col = cat_col
+
+    if best_col:
+        return best_col
 
     return None
-
 
 
 def extract_filters(query: str, df: pd.DataFrame, meta: dict) -> Dict[str, Any]:
@@ -1664,19 +1771,33 @@ def classify_query_intent(
         return "trend"
 
     # ─────────────────────────────
-    # 4. RANKING
-    # ─────────────────────────────
-    if is_ranking_query(q):
-        return "ranking"
-
-    # ─────────────────────────────
-    # 5. DISTRIBUTION
+    # 4. DISTRIBUTION / GROUPED COUNT
     # ─────────────────────────────
     if roles.get("is_cat_dist"):
         return "distribution"
 
-    if roles.get("is_count") and roles.get("grouping_entity"):
+    if (
+        roles.get("is_count")
+        and roles.get("grouping_entity")
+    ):
         return "distribution"
+
+    # categorical "most used" type queries
+    if (
+        roles.get("grouping_entity")
+        and not roles.get("metric")
+        and re.search(
+            r'\b(most|least|highest|lowest|top|bottom|used)\b',
+            q
+        )
+    ):
+        return "distribution"
+
+    # ─────────────────────────────
+    # 5. RANKING
+    # ─────────────────────────────
+    if is_ranking_query(q):
+        return "ranking"
 
     # ─────────────────────────────
     # 6. KPI
@@ -1698,6 +1819,7 @@ def classify_query_intent(
     # 8. FALLBACK
     # ─────────────────────────────
     return "explanation"
+
 
 
 
@@ -1723,17 +1845,30 @@ def extract_semantic_roles(query: str, df: pd.DataFrame, meta: dict) -> Dict[str
     }
 
     roles["operation"] = detect_operation(query)
+    if roles["operation"] == "unique_count":
+        roles["is_count"] = True
     roles["aggregation"] = roles["operation"]
 
     if roles["operation"] == "count":
         roles["is_count"] = True
-    
-    if roles["is_count"]:
-        roles["metric"] = None
-    
-    # Scalar count queries should not force grouping
-    if roles["is_count"] and not roles.get("grouping_entity"):
-        roles["grouping_entity"] = None
+        
+    # implicit count/grouping queries
+    if (
+        not roles["metric"]
+        and detect_group_by(query, df, meta)
+        and re.search(
+            r'\b(most|least|highest|lowest|top|bottom|used|common|frequent)\b',
+            q
+        )
+    ):
+        roles["is_count"] = True
+
+        if roles["is_count"]:
+            roles["metric"] = None
+
+        # Scalar count queries should not force grouping
+        if roles["is_count"] and not roles.get("grouping_entity"):
+            roles["grouping_entity"] = None
 
     is_cat, cat_col       = is_categorical_distribution_query(q, meta)
     roles["is_cat_dist"]  = is_cat
@@ -1752,31 +1887,35 @@ def extract_semantic_roles(query: str, df: pd.DataFrame, meta: dict) -> Dict[str
                 break
 
         if not roles["metric"]:
-            roles["metric"] = find_column(
-                query,
-                safe_num,
-                synonyms,
-                meta,
-                expected_type="metric"
-            )
+            # avoid forcing metrics for grouped count queries
+            if not (
+                roles.get("grouping_entity")
+                and roles.get("is_count")
+            ):
+                roles["metric"] = find_column(
+                    query,
+                    safe_num,
+                    synonyms,
+                    meta,
+                    expected_type="metric"
+                )
 
-        roles["grouping_entity"] = detect_group_by(query, df, meta)
+    roles["grouping_entity"] = detect_group_by(query, df, meta)
 
-        if re.search(r'\b(top|highest|largest|most|best|leading|greatest)\b', q):
-            roles["ranking"]["direction"] = "desc"
-        elif re.search(r'\b(bottom|lowest|least|worst|smallest|trailing|fewest)\b', q):
-            roles["ranking"]["direction"] = "asc"
+    if re.search(r'\b(top|highest|largest|most|best|leading|greatest)\b', q):
+        roles["ranking"]["direction"] = "desc"
+    elif re.search(r'\b(bottom|lowest|least|worst|smallest|trailing|fewest)\b', q):
+        roles["ranking"]["direction"] = "asc"
 
-        for n in re.findall(r'\b(\d+)\b', query):
-            n_int = int(n)
-            if 1 <= n_int <= 1000:
-                roles["ranking"]["limit"] = n_int
-                break
+    for n in re.findall(r'\b(\d+)\b', query):
+        n_int = int(n)
+        if 1 <= n_int <= 1000:
+            roles["ranking"]["limit"] = n_int
+            break
 
     roles["filters"] = extract_filters(query, df, meta)
 
     return roles
-
 
 
 def build_query_plan(query: str, df: pd.DataFrame, meta: dict,
@@ -1790,11 +1929,23 @@ def build_query_plan(query: str, df: pd.DataFrame, meta: dict,
         and not re.search(r"\bby\b|\bper\b", query.lower())
     ):
         roles["grouping_entity"] = None
+
     query_type  = classify_query_intent(query, roles, meta, history)
     is_followup = detect_followup(query, history)
 
-    agg_spec = (AggregationSpec(operation=roles["aggregation"], column=roles["metric"])
-                if roles["aggregation"] else None)
+    agg_operation = roles["aggregation"]
+
+    if agg_operation == "unique_count":
+        agg_operation = "count"
+
+    agg_spec = (
+        AggregationSpec(
+            operation=agg_operation,
+            column=roles["metric"]
+        )
+        if roles["aggregation"]
+        else None
+    )
 
     relevant_cols = select_relevant_columns(query, query_type, roles, df, meta)
     confidence    = score_plan_confidence(query_type, roles)
@@ -1802,49 +1953,38 @@ def build_query_plan(query: str, df: pd.DataFrame, meta: dict,
     # ─────────────────────────────
     # Visualization Planning
     # ─────────────────────────────
-
     visualization = None
 
     if query_type in ("ranking", "aggregation", "distribution"):
         visualization = "bar"
-
     elif query_type == "trend":
         visualization = "line"
-
     elif query_type == "comparison":
         visualization = "bar"
-
     elif query_type == "kpi":
         visualization = "scalar"
 
     # ─────────────────────────────
     # Execution Mode Planning
     # ─────────────────────────────
-
     execution_mode = "scalar"
 
     if query_type == "ranking":
         execution_mode = "ranked"
-    
     elif query_type == "kpi":
         execution_mode = "kpi"
-
     elif query_type in ("aggregation", "distribution"):
         execution_mode = "grouped"
-
     elif query_type == "trend":
         execution_mode = "trend"
-
     elif query_type == "comparison":
         execution_mode = "comparison"
-
     elif query_type == "raw_retrieval":
         execution_mode = "raw"
 
     # ─────────────────────────────
     # Query Plan Object
     # ─────────────────────────────
-
     plan = QueryPlan(
         query_type=query_type,
         operation=roles.get("operation"),
@@ -1883,6 +2023,7 @@ def build_query_plan(query: str, df: pd.DataFrame, meta: dict,
         plan.clarification_reason = generate_clarification(plan, meta)
 
     return plan
+
 
 
 def select_relevant_columns(query: str, query_type: str, roles: Dict[str, Any],
@@ -2296,7 +2437,6 @@ def execute_kpi_or_aggregation(plan: QueryPlan, df: pd.DataFrame,
     # ─────────────────────────────
     # Pure row count KPI
     # ─────────────────────────────
-
     if (
         plan.operation == "count"
         and not plan.metric_column
@@ -2305,7 +2445,6 @@ def execute_kpi_or_aggregation(plan: QueryPlan, df: pd.DataFrame,
         total_rows = len(filtered_df if 'filtered_df' in locals() else df)
 
         title = "Count of Records"
-
         if plan.filters:
             title += " (filtered)"
 
@@ -2328,8 +2467,14 @@ def execute_kpi_or_aggregation(plan: QueryPlan, df: pd.DataFrame,
 
     agg_op    = plan.aggregation.operation if plan.aggregation else "sum"
     pandas_fn = {
-        "sum": "sum", "avg": "mean", "count": "count", "min": "min",
-        "max": "max", "median": "median", "stddev": "std"
+        "sum": "sum",
+        "avg": "mean",
+        "count": "count",
+        "unique_count": "nunique",
+        "min": "min",
+        "max": "max",
+        "median": "median",
+        "stddev": "std"
     }.get(agg_op, "sum")
 
     if plan.group_by_column and plan.group_by_column in df.columns:
@@ -2355,9 +2500,21 @@ def execute_kpi_or_aggregation(plan: QueryPlan, df: pd.DataFrame,
         }
 
     # FIX #29: Scalar KPI
-    val   = round(float(getattr(df[plan.metric_column], pandas_fn)()), 2)
+    if agg_op == "unique_count":
+        val = int(df[plan.metric_column].nunique())
+    else:
+        val = round(
+            float(
+                getattr(
+                    df[plan.metric_column],
+                    pandas_fn
+                )()
+            ),
+            2
+        )
+
     label = {
-        "sum": "Total", "avg": "Average", "mean": "Average", "count": "Count",
+        "sum": "Total", "avg": "Average", "mean": "Average", "count": "Count", "unique_count": "Unique Count",
         "min": "Minimum", "max": "Maximum", "median": "Median",
         "stddev": "Std Dev"
     }.get(agg_op, agg_op.title())
@@ -2368,7 +2525,6 @@ def execute_kpi_or_aggregation(plan: QueryPlan, df: pd.DataFrame,
         "table": [{f"{label} {plan.metric_column}": f"{val:,.2f}"}],
         "insight": f"The {label.lower()} of **{plan.metric_column}** is **{val:,.2f}**."
     }
-
 
 
 def execute_comparison(plan: QueryPlan, df: pd.DataFrame, meta: dict,
@@ -2456,71 +2612,77 @@ def execute_distribution(plan: QueryPlan, df: pd.DataFrame, meta: dict,
     cat_dist_col = getattr(plan, "_cat_dist_col", None)
 
     # FIX #23: Explicit grouped count
-    if is_count_q and plan.group_by_column and plan.group_by_column in df.columns:
-        result = (df.groupby(plan.group_by_column)
-                    .size().reset_index(name="count")
-                    .sort_values("count", ascending=False))
-        return {
-            "type":"structured",
-            "title": f"Count per {plan.group_by_column}{filter_note}",
-            "table": result.to_dict(orient="records"),
-            "chart":{"type":"bar",
-                     "labels": result[plan.group_by_column].astype(str).tolist()[:12],
-                     "values": result["count"].tolist()[:12],
-                     "x_label": plan.group_by_column,"y_label":"count"}
-        }
-
-    # Choose target column
-    target_col = None
-    if cat_dist_col and cat_dist_col in df.columns and cat_dist_col not in exclude:
-        target_col = cat_dist_col
-    elif (plan.metric_column and plan.metric_column in df.columns
-          and not pd.api.types.is_numeric_dtype(df[plan.metric_column])
-          and plan.metric_column not in exclude):
-        target_col = plan.metric_column
-    elif plan.group_by_column and plan.group_by_column in df.columns:
-        target_col = plan.group_by_column
-    else:
-        safe_cat = [c for c in
-                    (meta.get("low_cardinality_cols",[]) + meta.get("categorical_cols",[]))
-                    if c not in exclude]
-        target_col = safe_cat[0] if safe_cat else None
-
-    if not target_col:
-        return {"type":"error","title":"No categorical column found",
-                "insight":"Please specify a categorical column to analyse."}
-
-    if pd.api.types.is_numeric_dtype(df[target_col]):
-        if target_col in id_cols:
-            safe_cat = [c for c in meta.get("categorical_cols",[]) if c not in exclude]
-            if safe_cat:
-                target_col = safe_cat[0]
-                result = df[target_col].value_counts().reset_index()
-                result.columns = [target_col, "count"]
-            else:
-                return {"type":"error","title":"No suitable column","insight":"No categorical column."}
+    if (
+        (
+            is_count_q
+            or (
+                not plan.metric_column
+                and plan.group_by_column
+            )
+        )
+        and plan.group_by_column in df.columns
+    ):
+        # Choose target column
+        target_col = None
+        if cat_dist_col and cat_dist_col in df.columns and cat_dist_col not in exclude:
+            target_col = cat_dist_col
+        elif (plan.metric_column and plan.metric_column in df.columns
+              and not pd.api.types.is_numeric_dtype(df[plan.metric_column])
+              and plan.metric_column not in exclude):
+            target_col = plan.metric_column
+        elif plan.group_by_column and plan.group_by_column in df.columns:
+            target_col = plan.group_by_column
         else:
-            try:
-                bucketed = pd.cut(df[target_col], bins=8).value_counts().sort_index().reset_index()
-                bucketed.columns = [target_col, "count"]
-                bucketed[target_col] = bucketed[target_col].astype(str)
-                result = bucketed
-            except Exception:
-                result = df[target_col].value_counts().reset_index()
-                result.columns = [target_col, "count"]
-    else:
-        result = df[target_col].value_counts().reset_index()
-        result.columns = [target_col, "count"]
+            safe_cat = [c for c in
+                        (meta.get("low_cardinality_cols", []) + meta.get("categorical_cols", []))
+                        if c not in exclude]
+            target_col = safe_cat[0] if safe_cat else None
 
-    return {
-        "type":"structured",
-        "title": f"Distribution of {target_col}{filter_note}",
-        "table": result.to_dict(orient="records"),
-        "chart":{"type":"bar",
-                 "labels": result[target_col].astype(str).tolist()[:12],
-                 "values": result["count"].tolist()[:12],
-                 "x_label": target_col,"y_label":"count"}
-    }
+        if not target_col:
+            return {
+                "type": "error",
+                "title": "No categorical column found",
+                "insight": "Please specify a categorical column to analyse."
+            }
+
+        if pd.api.types.is_numeric_dtype(df[target_col]):
+            if target_col in id_cols:
+                safe_cat = [c for c in meta.get("categorical_cols", []) if c not in exclude]
+                if safe_cat:
+                    target_col = safe_cat[0]
+                    result = df[target_col].value_counts().reset_index()
+                    result.columns = [target_col, "count"]
+                else:
+                    return {
+                        "type": "error",
+                        "title": "No suitable column",
+                        "insight": "No categorical column."
+                    }
+            else:
+                try:
+                    bucketed = pd.cut(df[target_col], bins=8).value_counts().sort_index().reset_index()
+                    bucketed.columns = [target_col, "count"]
+                    bucketed[target_col] = bucketed[target_col].astype(str)
+                    result = bucketed
+                except Exception:
+                    result = df[target_col].value_counts().reset_index()
+                    result.columns = [target_col, "count"]
+        else:
+            result = df[target_col].value_counts().reset_index()
+            result.columns = [target_col, "count"]
+
+        return {
+            "type": "structured",
+            "title": f"Distribution of {target_col}{filter_note}",
+            "table": result.to_dict(orient="records"),
+            "chart": {
+                "type": "bar",
+                "labels": result[target_col].astype(str).tolist()[:12],
+                "values": result["count"].tolist()[:12],
+                "x_label": target_col,
+                "y_label": "count"
+            }
+        }
 
 
 def execute_correlation(plan: QueryPlan, df: pd.DataFrame, meta: dict,
@@ -2578,17 +2740,23 @@ def execute_raw_retrieval(plan: QueryPlan, df: pd.DataFrame, meta: dict,
 async def upload(file: UploadFile = File(...)):
     session_id = str(uuid.uuid4())
     contents   = await file.read()
+
     try:
         fname = file.filename or ""
+
         if fname.endswith(".csv"):
             df = pd.read_csv(io.StringIO(contents.decode("utf-8")))
+
         elif fname.endswith((".xlsx",".xls")):
             df = pd.read_excel(io.BytesIO(contents))
+
         else:
             try:
                 df = pd.read_csv(io.StringIO(contents.decode("utf-8")))
+
             except Exception:
                 df = pd.read_excel(io.BytesIO(contents))
+
     except Exception as e:
         return {"error": f"Failed to parse file: {e}"}
 
@@ -2596,17 +2764,22 @@ async def upload(file: UploadFile = File(...)):
         return {"error": "The uploaded file appears to be empty."}
 
     df.columns = df.columns.str.strip()
+
     meta = build_dataset_meta(df)
+
     datasets[session_id]             = df
     ai_call_count[session_id]        = 0
     conversation_history[session_id] = []
 
     summary = summarize_dataset(df, meta)
+
     meta["summary"] = summary
     dataset_meta[session_id] = meta
+
     ai_call_count[session_id] += 1
 
-    return {
+    return sanitize_for_json({
+
         "session_id":       session_id,
         "columns":          df.columns.tolist(),
         "rows":             len(df),
@@ -2619,7 +2792,8 @@ async def upload(file: UploadFile = File(...)):
         "column_roles":     meta["column_roles"],
         "suggestions":      generate_suggestions(df, meta),
         "summary":          summary
-    }
+
+    })
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2701,7 +2875,7 @@ async def query_endpoint(payload: dict):
     response.setdefault("title", q.capitalize())
     response["ai_calls_used"]      = ai_call_count.get(session_id, 0)
     response["ai_calls_remaining"] = AI_CALL_LIMIT - ai_call_count.get(session_id, 0)
-    return response
+    return sanitize_for_json(response)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2712,7 +2886,7 @@ async def query_endpoint(payload: dict):
 async def get_history(session_id: str):
     if session_id not in conversation_history:
         return {"error": "Session not found."}
-    return {"history": conversation_history[session_id]}
+    return sanitize_for_json({"history": conversation_history[session_id]})
 
 
 @app.post("/api/export")
