@@ -1517,6 +1517,7 @@ def validate_query_plan(plan: QueryPlan, df: pd.DataFrame, meta: dict) -> Tuple[
     cat_set     = set(meta.get("categorical_cols", []) + meta.get("low_cardinality_cols", []))
     free_text   = set(meta.get("free_text_cols", []))
 
+    # prevent metric on identifier columns
     if plan.metric_column in id_cols:
         alt = list(numeric_set - id_cols)[:3]
         return False, (
@@ -1525,14 +1526,48 @@ def validate_query_plan(plan: QueryPlan, df: pd.DataFrame, meta: dict) -> Tuple[
         )
 
     if plan.query_type in ("ranking", "aggregation", "kpi"):
-        if plan.metric_column and plan.metric_column not in numeric_set:
-            alt = list(numeric_set)[:3]
+        numeric_required_ops = {"sum", "avg", "mean", "min", "max", "median", "stddev"}
+        requires_numeric = plan.operation in numeric_required_ops
+
+        if (
+            requires_numeric
+            and plan.metric_column
+            and plan.metric_column not in numeric_set
+        ):
+            alt = list(numeric_set)[:5]
             return False, (
-                f"'{plan.metric_column}' is not numeric. "
-                f"Available: {', '.join(alt) or 'none'}."
+                f"'{plan.metric_column}' cannot be used with "
+                f"'{plan.operation}'. Numeric column required. "
+                f"Try: {', '.join(alt) or 'none'}."
             )
+
+        # count / unique_count allowed on categorical cols
+        allowed_non_numeric_ops = {"count", "unique_count"}
+
+        if (
+            plan.operation not in allowed_non_numeric_ops
+            and plan.metric_column
+            and plan.metric_column not in numeric_set
+            and requires_numeric
+        ):
+            return False, (
+                f"Invalid aggregation on non-numeric column "
+                f"'{plan.metric_column}'."
+            )
+
         if not plan.metric_column and not numeric_set:
             return False, "No numeric columns to aggregate."
+
+    # prevent aggregation on identifier columns (except count/unique_count)
+    if (
+        plan.metric_column
+        and plan.metric_column in id_cols
+        and plan.operation not in ("count", "unique_count")
+    ):
+        return False, (
+            f"'{plan.metric_column}' is an identifier column "
+            f"and cannot be aggregated meaningfully."
+        )
 
     if plan.group_by_column:
         if plan.group_by_column in free_text:
@@ -1541,16 +1576,21 @@ def validate_query_plan(plan: QueryPlan, df: pd.DataFrame, meta: dict) -> Tuple[
                 f"'{plan.group_by_column}' has too many unique values. "
                 f"Try: {', '.join(safe)}."
             )
-        schema_registry = meta.get("schema_registry", {})
 
-        if not schema_registry.get(
-            plan.group_by_column,
-            {}
-        ).get("is_groupable", False):
-            return (
-                False,
-                f"'{plan.group_by_column}' is not suitable for grouping."
-            )
+        # prevent continuous numeric grouping
+        if plan.group_by_column in numeric_set and plan.group_by_column not in cat_set:
+            nunique_ratio = df[plan.group_by_column].nunique() / max(len(df), 1)
+
+            # allow only low-cardinality numeric grouping
+            if nunique_ratio > 0.2:
+                return False, (
+                    f"'{plan.group_by_column}' is too continuous "
+                    f"for grouping."
+                )
+
+        schema_registry = meta.get("schema_registry", {})
+        if not schema_registry.get(plan.group_by_column, {}).get("is_groupable", False):
+            return False, f"'{plan.group_by_column}' is not suitable for grouping."
 
     if plan.query_type == "trend" and not meta.get("date_col"):
         return False, "Trend analysis requires a date/time column."
@@ -1559,6 +1599,8 @@ def validate_query_plan(plan: QueryPlan, df: pd.DataFrame, meta: dict) -> Tuple[
         return False, "Correlation requires at least 2 numeric columns."
 
     return True, ""
+
+
 
 
 VAGUE_QUERY_PATTERNS = [
@@ -1574,10 +1616,11 @@ VAGUE_QUERY_PATTERNS = [
 ]
 
 VAGUE_SINGLE_WORDS = {
-    "analysis","analytics","report","overview","summary","insights","numbers",
-    "data","stats","statistics","performance","growth","decline","trends",
-    "comparison","breakdown","distribution","best","worst",
+    "analysis", "analytics", "report", "overview", "summary", "insights", "numbers",
+    "data", "stats", "statistics", "performance", "growth", "decline", "trends",
+    "comparison", "breakdown", "distribution", "best", "worst",
 }
+
 
 
 def detect_ambiguity(query: str, plan: QueryPlan, meta: dict) -> Tuple[bool, str]:
@@ -1922,6 +1965,7 @@ def build_query_plan(query: str, df: pd.DataFrame, meta: dict,
                      history: List[dict]) -> QueryPlan:
 
     roles       = extract_semantic_roles(query, df, meta)
+
     # Filter-only KPI queries should remain scalar
     if (
         roles.get("is_count")
@@ -1951,29 +1995,33 @@ def build_query_plan(query: str, df: pd.DataFrame, meta: dict,
     confidence    = score_plan_confidence(query_type, roles)
 
     # ─────────────────────────────
-    # Visualization Planning
+    # Dynamic Visualization Planning
     # ─────────────────────────────
-    visualization = None
-
-    if query_type in ("ranking", "aggregation", "distribution"):
-        visualization = "bar"
+    if query_type == "kpi":
+        visualization = "scalar"
     elif query_type == "trend":
         visualization = "line"
     elif query_type == "comparison":
         visualization = "bar"
-    elif query_type == "kpi":
-        visualization = "scalar"
+    elif query_type == "distribution":
+        visualization = "pie"
+    elif query_type in ("aggregation", "ranking") and roles.get("grouping_entity"):
+        visualization = "bar"
+    elif query_type == "raw_retrieval":
+        visualization = "table"
+    else:
+        visualization = "table"
 
     # ─────────────────────────────
-    # Execution Mode Planning
+    # Dynamic Execution Planning
     # ─────────────────────────────
-    execution_mode = "scalar"
-
     if query_type == "ranking":
         execution_mode = "ranked"
     elif query_type == "kpi":
         execution_mode = "kpi"
-    elif query_type in ("aggregation", "distribution"):
+    elif query_type == "aggregation":
+        execution_mode = "grouped" if roles.get("grouping_entity") else "scalar"
+    elif query_type == "distribution":
         execution_mode = "grouped"
     elif query_type == "trend":
         execution_mode = "trend"
@@ -1981,10 +2029,10 @@ def build_query_plan(query: str, df: pd.DataFrame, meta: dict,
         execution_mode = "comparison"
     elif query_type == "raw_retrieval":
         execution_mode = "raw"
+    else:
+        execution_mode = "scalar"
 
-    # ─────────────────────────────
-    # Query Plan Object
-    # ─────────────────────────────
+    # Build and return the final QueryPlan
     plan = QueryPlan(
         query_type=query_type,
         operation=roles.get("operation"),
@@ -1993,29 +2041,33 @@ def build_query_plan(query: str, df: pd.DataFrame, meta: dict,
         group_by_column=roles["grouping_entity"],
         filters=roles["filters"],
         sort_by=roles["metric"],
-        sort_order="desc" if roles["ranking"]["direction"] != "asc" else "asc",
-        limit=roles["ranking"]["limit"],
+        sort_order="desc" if roles.get("ranking", {}).get("direction") != "asc" else "asc",
+        limit=roles.get("ranking", {}).get("limit"),
         relevant_columns=relevant_cols,
         confidence=confidence,
         is_followup=is_followup,
         raw_query=query,
         visualization=visualization,
         execution_mode=execution_mode,
+        roles=roles
     )
 
+    # Extra flags
     plan._cat_dist_col      = roles.get("cat_dist_col")
     plan._is_count          = roles.get("is_count", False)
     plan._sort_by_date_desc = bool(
         re.search(r'\b(recent|latest|newest|last\s+\d+|most\s+recent)\b', query.lower())
     )
 
+    # Handle follow-ups
     if is_followup:
         plan = inherit_context(plan, history, df, meta)
 
+    # Repair query if needed
     plan, _ = repair_query(query, plan, meta)
 
     # Re-score after repair
-    roles_after    = extract_semantic_roles(plan.repaired_query or query, df, meta)
+    roles_after     = extract_semantic_roles(plan.repaired_query or query, df, meta)
     plan.confidence = score_plan_confidence(plan.query_type, roles_after)
 
     if plan.confidence < 0.3 and not is_followup:
@@ -2023,7 +2075,6 @@ def build_query_plan(query: str, df: pd.DataFrame, meta: dict,
         plan.clarification_reason = generate_clarification(plan, meta)
 
     return plan
-
 
 
 def select_relevant_columns(query: str, query_type: str, roles: Dict[str, Any],
@@ -2376,10 +2427,6 @@ def execute_query_plan(plan: QueryPlan, df: pd.DataFrame, meta: dict,
         }
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# EXECUTION TEMPLATES
-# ═══════════════════════════════════════════════════════════════════════════════
-
 def execute_ranking(plan: QueryPlan, df: pd.DataFrame, meta: dict,
                     filter_note: str) -> dict:
     """FIX #22: Full groupby → aggregate → sort → limit pipeline."""
@@ -2425,7 +2472,9 @@ def execute_ranking(plan: QueryPlan, df: pd.DataFrame, meta: dict,
         values    = result[plan.metric_column].tolist() if plan.metric_column in result.columns else []
 
     return {
-        "type":"structured","title":title,
+        "type":"structured",
+        "visualization": "bar",
+        "title":title,
         "table": result.to_dict(orient="records"),
         "chart":{"type":"bar","labels":[str(l) for l in labels[:12]],"values":values[:12],
                  "x_label": plan.group_by_column or "Rank","y_label": plan.metric_column}
@@ -2455,7 +2504,7 @@ def execute_kpi_or_aggregation(plan: QueryPlan, df: pd.DataFrame,
             "insight": f"Total matching records: {total_rows:,}."
         }
 
-    id_cols  = set(meta.get("id_like_cols", []))
+    id_cols = set(meta.get("id_like_cols", []))
     safe_num = [c for c in meta.get("numeric_cols", []) if c not in id_cols]
 
     if not plan.metric_column or plan.metric_column not in df.columns:
@@ -2465,7 +2514,7 @@ def execute_kpi_or_aggregation(plan: QueryPlan, df: pd.DataFrame,
             "insight": f"Available: {', '.join(safe_num[:5]) or 'none'}."
         }
 
-    agg_op    = plan.aggregation.operation if plan.aggregation else "sum"
+    agg_op = plan.aggregation.operation if plan.aggregation else "sum"
     pandas_fn = {
         "sum": "sum",
         "avg": "mean",
@@ -2488,6 +2537,7 @@ def execute_kpi_or_aggregation(plan: QueryPlan, df: pd.DataFrame,
         title = f"{agg_op.title()} of {plan.metric_column} by {plan.group_by_column}{filter_note}"
         return {
             "type": "structured",
+            "visualization": "bar",
             "title": title,
             "table": result.to_dict(orient="records"),
             "chart": {
@@ -2520,11 +2570,19 @@ def execute_kpi_or_aggregation(plan: QueryPlan, df: pd.DataFrame,
     }.get(agg_op, agg_op.title())
 
     return {
-        "type": "structured",
+        "type": "kpi",
         "title": f"{label} of {plan.metric_column}{filter_note}",
-        "table": [{f"{label} {plan.metric_column}": f"{val:,.2f}"}],
-        "insight": f"The {label.lower()} of **{plan.metric_column}** is **{val:,.2f}**."
+        "value": val,
+        "metric": plan.metric_column,
+        "aggregation": agg_op,
+        "visualization": "scalar",
+        "insight": (
+            f"The {label.lower()} of "
+            f"**{plan.metric_column}** "
+            f"is **{val:,.2f}**."
+        )
     }
+
 
 
 def execute_comparison(plan: QueryPlan, df: pd.DataFrame, meta: dict,
@@ -2591,7 +2649,9 @@ def execute_trend(plan: QueryPlan, df: pd.DataFrame, meta: dict,
 
     display_limit = min(30, len(trend_df))
     return {
-        "type":"structured","title":title,
+        "type":"structured",
+        "visualization": "line",
+        "title":title,
         "table": trend_df.head(display_limit).to_dict(orient="records"),
         "chart":{"type":"line",
                  "labels":[str(l) for l in x_labels[:display_limit]],
@@ -2673,10 +2733,11 @@ def execute_distribution(plan: QueryPlan, df: pd.DataFrame, meta: dict,
 
         return {
             "type": "structured",
+            "visualization": "pie",
             "title": f"Distribution of {target_col}{filter_note}",
             "table": result.to_dict(orient="records"),
             "chart": {
-                "type": "bar",
+                "type": "pie",
                 "labels": result[target_col].astype(str).tolist()[:12],
                 "values": result["count"].tolist()[:12],
                 "x_label": target_col,
