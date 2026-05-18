@@ -112,6 +112,7 @@ class QueryPlan:
     visualization:    Optional[str]           = None
     execution_mode:   Optional[str]           = None
     relevant_columns: List[str]               = field(default_factory=list)
+    roles: Dict[str, Any]                     = field(default_factory=dict)
     confidence:       float                   = 0.0
     is_followup:      bool                    = False
     raw_query:        str                     = ""
@@ -662,7 +663,7 @@ def build_dataset_meta(df: pd.DataFrame) -> dict:
                        "created","updated","timestamp","period","quarter"]
             if any(k in col_lower for k in date_kw):
                 try:
-                    parsed = pd.to_datetime(series, infer_datetime_format=True, errors="coerce")
+                    parsed = pd.to_datetime(series, errors="coerce")
                     if parsed.notna().sum() / max(len(series), 1) > 0.7:
                         df[col] = parsed
                         meta["datetime_cols"].append(col)
@@ -1076,15 +1077,27 @@ def is_raw_retrieval_query(query: str) -> bool:
         r"\bretrieve\b",
         r"\bfetch\b",
         r"\bget\b",
+        r"\bshow all\b",
+        r"\blist all\b",
+        r"\bdisplay all\b",
+        r"\bshow records\b",
+        r"\bshow rows\b",
+        r"\bview\b",
     ]
 
     aggregation_patterns = [
         r"\btotal\b",
         r"\bsum\b",
         r"\baverage\b",
+        r"\bavg\b",
         r"\bcount\b",
         r"\btop\b",
         r"\bhighest\b",
+        r"\blowest\b",
+        r"\bmaximum\b",
+        r"\bminimum\b",
+        r"\bdistribution\b",
+        r"\bbreakdown\b",
     ]
 
     has_retrieval = any(re.search(p, q) for p in retrieval_patterns)
@@ -1798,8 +1811,23 @@ def classify_query_intent(
     # ─────────────────────────────
     # 1. RAW RETRIEVAL
     # ─────────────────────────────
-    if is_raw_retrieval_query(q):
+
+    if (
+        is_raw_retrieval_query(q)
+        and not roles.get("aggregation")
+        and not roles.get("metric")
+    ):
         return "raw_retrieval"
+
+    # filtered record retrieval
+
+    if (
+        is_raw_retrieval_query(q)
+        and roles.get("filters")
+        and not roles.get("grouping_entity")
+    ):
+        return "raw_retrieval"
+
 
     # ─────────────────────────────
     # 2. COMPARISON
@@ -2786,10 +2814,21 @@ def execute_raw_retrieval(plan: QueryPlan, df: pd.DataFrame, meta: dict,
     if getattr(plan, "_sort_by_date_desc", False) and meta.get("date_col") and meta["date_col"] in result.columns:
         result = result.sort_values(meta["date_col"], ascending=False)
 
-    result = result.head(plan.limit)
+    # filtered retrievals should return more rows
+
+    if plan.filters:
+        result = result.head(50)
+    else:
+        result = result.head(plan.limit)
+        
     sort_prefix = "Latest " if getattr(plan, "_sort_by_date_desc", False) else ""
     return {"type":"structured",
-            "title": f"{sort_prefix}{len(result)} records{filter_note}",
+            "visualization": "table",
+            "title": (
+                f"Filtered Records{filter_note}"
+                if plan.filters
+                else f"{sort_prefix}{len(result)} records"
+            ),
             "table": result.to_dict(orient="records")}
 
 
