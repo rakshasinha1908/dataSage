@@ -1,0 +1,11 @@
+Upload CSV
+↓
+Generate metadata
+↓
+Parse query
+↓
+Create plan
+↓
+Execute
+↓
+Render response

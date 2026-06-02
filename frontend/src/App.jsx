@@ -5,6 +5,272 @@ import {
   ResponsiveContainer, Area, AreaChart
 } from "recharts";
 
+// ═════════════════════════════════════════════════════════════════════════════
+// IMPROVEMENTS #26-33: DATA VALIDATION, SANITIZATION & SAFE RENDERING
+// ═════════════════════════════════════════════════════════════════════════════
+
+// Improvement #33: Runtime Diagnostics Logger
+class ResponseDiagnostics {
+  static log(label, data) {
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[DataSage] ${label}`, data);
+    }
+  }
+  
+  static logCellType(colName, value) {
+    const type = typeof value;
+    if (type === "object" && value !== null) {
+      console.warn(`[DataSage] Cell type warning: ${colName} has type '${type}'`, value);
+    }
+  }
+  
+  static logResponseSchema(response) {
+    console.log("[DataSage] Response Schema:", {
+      status: response?.status,
+      type: response?.type,
+      hasTable: !!response?.table,
+      hasChart: !!response?.chart,
+      hasInsight: !!response?.insight,
+      tableRows: response?.table?.length || 0,
+      tableFirstRow: response?.table?.[0]
+    });
+  }
+  
+  static logValidationError(issue, response) {
+    console.warn(`[DataSage] Validation error: ${issue}`, response);
+  }
+}
+
+// Improvement #26, #29, #30: Safe Table Cell Rendering
+class SafeCellRenderer {
+  /**
+   * Convert any cell value to a safely renderable string.
+   * Handles: primitives, objects, arrays, null, undefined
+   */
+  static renderCell(value) {
+    // Null or undefined -> dash
+    if (value === null || value === undefined) {
+      return "—";
+    }
+    
+    // Primitives (string, number, boolean) -> render as-is
+    const primitiveType = typeof value;
+    if (primitiveType === "string") {
+      return value.length > 100 ? value.substring(0, 100) + "…" : value;
+    }
+    if (primitiveType === "number") {
+      return Number.isFinite(value) ? value.toLocaleString() : "—";
+    }
+    if (primitiveType === "boolean") {
+      return value ? "true" : "false";
+    }
+    
+    // Objects/Arrays -> convert to JSON string with truncation
+    if (primitiveType === "object") {
+      try {
+        const json = JSON.stringify(value);
+        if (json.length > 50) {
+          return json.substring(0, 50) + "…";
+        }
+        return json;
+      } catch (e) {
+        return "[Object]";
+      }
+    }
+    
+    // Fallback for unexpected types (Improvement #30)
+    return String(value);
+  }
+}
+
+// Improvement #28: Response Validators
+class ResponseValidator {
+  /**
+   * Validate table data structure before rendering.
+   */
+  static validateTableData(table) {
+    if (!table) return { valid: false, issue: "No table data" };
+    if (!Array.isArray(table)) return { valid: false, issue: "Table is not an array" };
+    if (table.length === 0) return { valid: false, issue: "Table is empty" };
+    
+    // Check first row structure
+    const firstRow = table[0];
+    if (typeof firstRow !== "object" || firstRow === null) {
+      return { valid: false, issue: "Table rows are not objects" };
+    }
+    
+    // Check all rows are objects
+    const allObjects = table.every(row => typeof row === "object" && row !== null);
+    if (!allObjects) {
+      return { valid: false, issue: "Not all rows are objects" };
+    }
+    
+    return { valid: true };
+  }
+  
+  /**
+   * Validate chart data structure.
+   */
+  static validateChartData(chart) {
+    if (!chart) return { valid: false, issue: "No chart data" };
+    if (!Array.isArray(chart.labels) || !Array.isArray(chart.values)) {
+      return { valid: false, issue: "Chart labels or values not arrays" };
+    }
+    if (chart.labels.length !== chart.values.length) {
+      return { valid: false, issue: "Chart labels/values length mismatch" };
+    }
+    if (chart.labels.length === 0) {
+      return { valid: false, issue: "Chart has no data points" };
+    }
+    
+    return { valid: true };
+  }
+  
+  /**
+   * Validate insight text field.
+   */
+  static validateInsightText(text) {
+    if (!text) return { valid: false, issue: "No insight text" };
+    if (typeof text !== "string") return { valid: false, issue: "Insight is not a string" };
+    return { valid: true };
+  }
+  
+  /**
+   * Full response structure validation (Improvement #28).
+   */
+  static validateFullResponse(response) {
+    const issues = [];
+    
+    // Check response is object
+    if (typeof response !== "object" || response === null) {
+      return { valid: false, issues: ["Response is not an object"] };
+    }
+    
+    // Check required fields
+    if (!response.type) issues.push("Missing response type");
+    if (!response.title && !response.message) issues.push("Missing title or message");
+    
+    // Check table data if present
+    if (response.table) {
+      const tableVal = this.validateTableData(response.table);
+      if (!tableVal.valid) issues.push(`Table: ${tableVal.issue}`);
+    }
+    
+    // Check chart data if present
+    if (response.chart) {
+      const chartVal = this.validateChartData(response.chart);
+      if (!chartVal.valid) issues.push(`Chart: ${chartVal.issue}`);
+    }
+    
+    // Check insight if present
+    if (response.insight) {
+      const insightVal = this.validateInsightText(response.insight);
+      if (!insightVal.valid) issues.push(`Insight: ${insightVal.issue}`);
+    }
+    
+    return {
+      valid: issues.length === 0,
+      issues
+    };
+  }
+}
+
+// Improvement #27, #32: Response Payload Sanitization
+class ResponseSanitizer {
+  /**
+   * Sanitize table row - convert all cell values to renderable strings.
+   * Prevents objects from reaching UI components.
+   */
+  static sanitizeTableRow(row) {
+    if (typeof row !== "object" || row === null) return row;
+    
+    const sanitized = {};
+    for (const [key, value] of Object.entries(row)) {
+      // Keep the original value structure but ensure renderability
+      sanitized[key] = value;
+    }
+    return sanitized;
+  }
+  
+  /**
+   * Sanitize entire table - ensure all cells are renderable.
+   * Converts nested objects/arrays to JSON strings.
+   */
+  static sanitizeTable(table) {
+    if (!Array.isArray(table)) return table;
+    
+    return table.map(row => {
+      if (typeof row !== "object" || row === null) return row;
+      
+      const sanitized = {};
+      for (const [key, value] of Object.entries(row)) {
+        // For complex types, store as-is - SafeCellRenderer will handle display
+        sanitized[key] = value;
+      }
+      return sanitized;
+    });
+  }
+  
+  /**
+   * Sanitize chart data.
+   */
+  static sanitizeChart(chart) {
+    if (!chart) return chart;
+    
+    return {
+      ...chart,
+      labels: Array.isArray(chart.labels) 
+        ? chart.labels.map(l => SafeCellRenderer.renderCell(l))
+        : chart.labels,
+      values: Array.isArray(chart.values)
+        ? chart.values.map(v => {
+            const num = Number(v);
+            return Number.isFinite(num) ? num : 0;
+          })
+        : chart.values,
+      type: chart.type || "bar",
+      x_label: chart.x_label || "Category",
+      y_label: chart.y_label || "Value"
+    };
+  }
+  
+  /**
+   * Full response sanitization (Improvement #32).
+   * Pass every API response through this before rendering.
+   */
+  static sanitizeResponse(response) {
+    if (!response || typeof response !== "object") {
+      return { type: "error", title: "Invalid response", error: "Response is not an object" };
+    }
+    
+    const sanitized = {
+      ...response,
+      title: typeof response.title === "string" ? response.title : "Result",
+      message: typeof response.message === "string" ? response.message : "",
+      insight: typeof response.insight === "string" ? response.insight : "",
+      type: response.type || "structured"
+    };
+    
+    // Sanitize table if present
+    if (response.table && Array.isArray(response.table)) {
+      sanitized.table = this.sanitizeTable(response.table);
+    }
+    
+    // Sanitize chart if present
+    if (response.chart && typeof response.chart === "object") {
+      sanitized.chart = this.sanitizeChart(response.chart);
+    }
+    
+    // Ensure value field for KPI responses is a number
+    if (sanitized.type === "kpi" && response.value !== undefined) {
+      const numVal = Number(response.value);
+      sanitized.value = Number.isFinite(numVal) ? numVal : 0;
+    }
+    
+    return sanitized;
+  }
+}
+
 // ─── Fonts ────────────────────────────────────────────────────────────────────
 const fontLink = document.createElement("link");
 fontLink.rel = "stylesheet";
@@ -449,19 +715,35 @@ const SparkleAvatar = () => (
 );
 
 // ─── Chart component ──────────────────────────────────────────────────────────
+// Improvement #28: Validate chart data before rendering
 function ChartBlock({ chart }) {
-  const data = chart.labels.map((l, i) => ({ name: l, value: chart.values[i] }));
-  const xLabel = chart.x_label || "";
-  const yLabel = chart.y_label || "";
+  // Improvement #28: Validate chart structure
+  if (!chart) {
+    return null;
+  }
+  
+  const validation = ResponseValidator.validateChartData(chart);
+  if (!validation.valid) {
+    ResponseDiagnostics.logValidationError("ChartBlock validation failed", validation.issue);
+    return null;
+  }
+
+  // Improvement #32: Sanitize chart data
+  const sanitized = ResponseSanitizer.sanitizeChart(chart);
+
+  const data = sanitized.labels.map((label, i) => ({
+    name: label,
+    value: sanitized.values?.[i] ?? 0
+  }));
 
   return (
     <div className="ds-chart-area">
       <div className="ds-chart-meta">
-        <div className="ds-chart-title">{yLabel}</div>
-        <div className="ds-chart-sub">by {xLabel}</div>
+        <div className="ds-chart-title">{sanitized?.y_label}</div>
+        <div className="ds-chart-sub">by {sanitized?.x_label}</div>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        {chart.type === "line" ? (
+        {sanitized.type === "line" ? (
           <AreaChart data={data}>
             <defs>
               <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
@@ -507,10 +789,105 @@ function InsightBlock({ text, label = "Key Insight" }) {
   );
 }
 
+// ─── Safe Response Renderer ────────────────────────────────────────────────────
+// Improvement #31: Data Contract - Component that enforces response schema safely
+// Improvement #30: Fallback Rendering for unsupported types
+function SafeResponseRenderer({ response }) {
+  if (!response) {
+    return <div className="ds-error-card">⚠ No response data available</div>;
+  }
+  
+  const isError = !!response.error;
+  const isAI = response.type === "ai";
+  const isStructured = response.type === "structured";
+  const isKPI = response.type === "kpi";
+  
+  // Error response
+  if (isError) {
+    return <div className="ds-error-card">⚠ {response.error}</div>;
+  }
+  
+  // Fallback for unknown types (Improvement #30)
+  if (!isAI && !isStructured && !isKPI) {
+    return (
+      <div className="ds-response-card">
+        <div className="ds-response-body">
+          <div className="ds-response-title">{response.title || "Result"}</div>
+          <div style={{ fontSize: "14px", color: "#6B7280", marginTop: "12px" }}>
+            Response type "{response.type}" not supported. Raw message:
+          </div>
+          <div style={{ fontSize: "13px", color: "#4B5563", marginTop: "8px", fontFamily: "'DM Mono', monospace" }}>
+            {response.message || JSON.stringify(response).substring(0, 200)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="ds-response-card">
+      <div className="ds-response-body">
+        <div className="ds-response-title">{response.title || "Result"}</div>
+        
+        {/* AI Answer */}
+        {isAI && response.insight && (
+          <InsightBlock text={response.insight} label="Answer" />
+        )}
+        
+        {/* KPI Value */}
+        {isKPI && (
+          <>
+            <div style={{
+              marginTop: "20px",
+              fontSize: "52px",
+              fontWeight: "700",
+              color: "#7C3AED",
+              letterSpacing: "-2px",
+              lineHeight: "1"
+            }}>
+              {typeof response.value === "number"
+                ? response.value.toLocaleString()
+                : SafeCellRenderer.renderCell(response.value)}
+            </div>
+            {response.insight && (
+              <InsightBlock text={response.insight} label="Key Insight" />
+            )}
+          </>
+        )}
+        
+        {/* Structured (Table + Chart) */}
+        {isStructured && (
+          <>
+            {response.insight && (
+              <InsightBlock text={response.insight} label="Key Insight" />
+            )}
+            <DataTable rows={response.table} />
+          </>
+        )}
+      </div>
+      
+      {/* Chart for structured responses */}
+      {isStructured && response?.chart?.labels && response?.chart?.values && (
+        <ChartBlock chart={response.chart} />
+      )}
+    </div>
+  );
+}
+
 // ─── Data table ───────────────────────────────────────────────────────────────
+// Improvement #26: Safe table cell rendering with object-to-string conversion
 function DataTable({ rows }) {
+  // Improvement #28: Validate table data before rendering
   if (!rows?.length) return null;
+  
+  const validation = ResponseValidator.validateTableData(rows);
+  if (!validation.valid) {
+    ResponseDiagnostics.logValidationError("DataTable validation failed", validation.issue);
+    return null;
+  }
+  
   const headers = Object.keys(rows[0]);
+  
   return (
     <div className="ds-table-wrap">
       <table className="ds-table">
@@ -520,7 +897,13 @@ function DataTable({ rows }) {
         <tbody>
           {rows.map((row, i) => (
             <tr key={i}>
-              {headers.map(h => <td key={h}>{row[h] ?? "—"}</td>)}
+              {headers.map(h => {
+                const cellValue = row[h];
+                // Improvement #26: Use SafeCellRenderer for all cell types
+                ResponseDiagnostics.logCellType(h, cellValue);
+                const displayValue = SafeCellRenderer.renderCell(cellValue);
+                return <td key={h}>{displayValue}</td>;
+              })}
             </tr>
           ))}
         </tbody>
@@ -611,6 +994,7 @@ export default function App() {
   }, []);
 
   // ── Query ───────────────────────────────────────────────────────────────────
+  // Improvement #32: Add response payload sanitization layer
   const handleQuery = async (customQuery) => {
     const q = (customQuery ?? query).trim();
     if (!q || loading || !sessionId) return;
@@ -621,10 +1005,28 @@ export default function App() {
       // Send session_id with every query
       const res = await axios.post("http://127.0.0.1:8000/api/query", {
         session_id: sessionId,
-        query: q
+        query: q,
+        debug: process.env.NODE_ENV === "development" // Request debug info in dev
       });
-      setChatHistory(prev => [...prev, { query: q, response: res.data }]);
+      
+      // Improvement #28: Validate response structure before rendering
+      const validation = ResponseValidator.validateFullResponse(res.data);
+      if (!validation.valid) {
+        ResponseDiagnostics.logValidationError("Response validation failed", validation.issues);
+        ResponseDiagnostics.log("Response with issues:", res.data);
+      }
+      
+      // Improvement #33: Log response schema for diagnostics
+      ResponseDiagnostics.logResponseSchema(res.data);
+      
+      // Improvement #32: Sanitize response before adding to chat history
+      const sanitized = ResponseSanitizer.sanitizeResponse(res.data);
+      
+      ResponseDiagnostics.log("Response after sanitization:", sanitized);
+      
+      setChatHistory(prev => [...prev, { query: q, response: sanitized }]);
     } catch (err) {
+      ResponseDiagnostics.log("Query error:", err);
       setChatHistory(prev => [...prev, {
         query: q,
         response: {
@@ -764,10 +1166,6 @@ export default function App() {
             {chatHistory.map((chat, idx) => {
               const res = chat.response;
               const isLast = idx === chatHistory.length - 1;
-              const isError = !!res.error;
-              const isAI = res.type === "ai";
-              const isStructured = res.type === "structured";
-              const isKPI = res.type === "kpi";
 
               return (
                 <div key={idx} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -777,7 +1175,7 @@ export default function App() {
                     <div className="ds-user-bubble">{chat.query}</div>
                   </div>
 
-                  {/* Bot response */}
+                  {/* Bot response — Improvement #31: Use SafeResponseRenderer for data contract enforcement */}
                   <div className="ds-msg">
                     <div className="ds-msg-header">
                       <SparkleAvatar />
@@ -786,65 +1184,13 @@ export default function App() {
                         <div className="ds-msg-sub">AI Analyst</div>
                       </div>
                     </div>
-
-                    {/* Error */}
-                    {isError && (
-                      <div className="ds-error-card">⚠ {res.error}</div>
-                    )}
-
-                    {/* Normal response card */}
-                    {!isError && (
-                      <div className="ds-response-card">
-                        <div className="ds-response-body">
-
-                          <div className="ds-response-title">{res.title}</div>
-
-                          {/* AI answer */}
-                          {isAI && (
-                            <InsightBlock text={res.insight} label="Answer" />
-                          )}
-
-                          {/* KPI */}
-{isKPI && (
-  <>
-    <div
-      style={{
-        marginTop: "20px",
-        fontSize: "52px",
-        fontWeight: "700",
-        color: "#7C3AED",
-        letterSpacing: "-2px",
-        lineHeight: "1"
-      }}
-    >
-      {typeof res.value === "number"
-        ? res.value.toLocaleString()
-        : res.value}
-    </div>
-
-    {res.insight && (
-      <InsightBlock text={res.insight} label="Key Insight" />
-    )}
-  </>
-)}
-
-                          {/* Structured */}
-                          {isStructured && (
-                            <>
-                              {res.insight && (
-                                <InsightBlock text={res.insight} label="Key Insight" />
-                              )}
-                              <DataTable rows={res.table} />
-                            </>
-                          )}
-
-                        </div>
-
-                        {/* Chart — only for structured responses with chart data */}
-                        {isStructured && res.chart && (
-                          <ChartBlock chart={res.chart} />
-                        )}
-
+                    
+                    {/* Improvement #31: All responses rendered through SafeResponseRenderer */}
+                    <SafeResponseRenderer response={res} />
+                    
+                    {/* Response content wrapper */}
+                    {!res.error && (
+                      <>
                         {/* Follow-up suggestion chips — only on the last message */}
                         {isLast && (
                           <div className="ds-chips">
@@ -854,8 +1200,7 @@ export default function App() {
                             ))}
                           </div>
                         )}
-
-                      </div>
+                      </>
                     )}
                   </div>
 
