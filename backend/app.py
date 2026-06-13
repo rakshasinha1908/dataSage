@@ -22,6 +22,14 @@ import math
 from difflib import SequenceMatcher
 from collections import defaultdict
 from abc import ABC, abstractmethod
+from response_renderer import ( QueryExecutionMetrics, UnifiedResponse,)
+from query_parser import (
+    AggregationSpec,
+    QueryPlan,
+    QueryResolution,
+    SemanticMatch,
+)
+
 
 # ─────────────────── LOGGING ───────────────────
 logging.basicConfig(level=logging.INFO)
@@ -49,56 +57,6 @@ ai_response_cache:    Dict[str, str]          = {}
 conversation_history: Dict[str, List[dict]]   = {}
 AI_CALL_LIMIT = 30
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# IMPROVEMENTS #1, #4, #20, #22, #23: UNIFIED RESPONSE SCHEMA & OBSERVABILITY
-# ═══════════════════════════════════════════════════════════════════════════════
-
-@dataclass
-class QueryExecutionMetrics:
-    """Tracks execution statistics and reliability metrics."""
-    query_received_ms: int = 0
-    resolution_ms: int = 0
-    execution_ms: int = 0
-    total_ms: int = 0
-    execution_type: str = "unknown"  # deterministic, llm_based, retrieval
-    ai_calls_used: int = 0
-    confidence_score: float = 0.0
-    resolution_score: float = 0.0
-    cache_hit: bool = False
-    
-    def to_dict(self) -> dict:
-        return asdict(self)
-
-
-@dataclass
-class UnifiedResponse:
-    """Standardized response schema for all endpoints."""
-    status: Literal["success", "error", "warning", "clarification", "fallback"] = "success"
-    message: str = ""
-    query_type: Optional[str] = None
-    query_processed: Optional[str] = None
-    data: Optional[Dict[str, Any]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    confidence: float = 0.0
-    metrics: Optional[QueryExecutionMetrics] = None
-    warnings: List[str] = field(default_factory=list)
-    suggestions: List[str] = field(default_factory=list)
-    debug: Optional[Dict[str, Any]] = None  # Improvement #21: Debug mode data
-    
-    def to_dict(self) -> dict:
-        return {
-            "status": self.status,
-            "message": self.message,
-            "query_type": self.query_type,
-            "query_processed": self.query_processed,
-            "data": self.data,
-            "metadata": self.metadata,
-            "confidence": round(self.confidence, 2),
-            "metrics": self.metrics.to_dict() if self.metrics else None,
-            "warnings": self.warnings,
-            "suggestions": self.suggestions,
-            "debug": self.debug if self.debug else None,
-        }
 
 
 class QueryLogger:
@@ -244,63 +202,6 @@ def sanitize_for_json(obj):
         pass
     return obj
 
-@dataclass
-class AggregationSpec:
-    operation: Literal["sum","avg","count","min","max","pct","stddev","median"] = "sum"
-    column: Optional[str] = None
-
-    def to_dict(self) -> dict:
-        return asdict(self)
-
-
-@dataclass
-class QueryPlan:
-    query_type:       Literal["ranking","aggregation","comparison","trend",
-                              "distribution","correlation","raw_retrieval",
-                              "explanation","kpi"] = "explanation"
-    operation: Optional[str] = None
-    metric_column:    Optional[str]           = None
-    aggregation:      Optional[AggregationSpec] = None
-    group_by_column:  Optional[str]           = None
-    filters:          Dict[str, Any]          = field(default_factory=dict)
-    sort_by:          Optional[str]           = None
-    sort_order:       Literal["asc","desc"]   = "desc"
-    limit:            int                     = 5
-    visualization:    Optional[str]           = None
-    execution_mode:   Optional[str]           = None
-    relevant_columns: List[str]               = field(default_factory=list)
-    roles: Dict[str, Any]                     = field(default_factory=dict)
-    confidence:       float                   = 0.0
-    is_followup:      bool                    = False
-    raw_query:        str                     = ""
-    clarification_needed: bool                = False
-    clarification_reason: str                 = ""
-    # FIX #18: context inheritance
-    inherited_filters:  Dict[str, Any]        = field(default_factory=dict)
-    inherited_entity:   Optional[str]         = None
-    inherited_metric:   Optional[str]         = None
-    # FIX #17: ambiguity
-    is_ambiguous:       bool                  = False
-    ambiguity_reason:   str                   = ""
-    # FIX #20: repaired query
-    repaired_query:     Optional[str]         = None
-    # TIME-SERIES: Granularity storage & inference
-    temporal_granularity: Optional[str]       = None  # Y, Q, M, W, D (period)
-    temporal_column:    Optional[str]         = None  # The date/time column used
-    # private routing extras (excluded from to_dict)
-    _cat_dist_col:      Optional[str]         = field(default=None, repr=False)
-    _is_count:          bool                  = field(default=False, repr=False)
-    _sort_by_date_desc: bool                  = field(default=False, repr=False)
-    _comparison_cols:   List[str]             = field(default_factory=list, repr=False)
-
-    def to_dict(self) -> dict:
-        d = asdict(self)
-        if self.aggregation:
-            d["aggregation"] = self.aggregation.to_dict()
-        for k in ["_cat_dist_col","_is_count","_sort_by_date_desc","_comparison_cols"]:
-            d.pop(k, None)
-        return d
-
 
 ID_COL_PATTERNS = re.compile(
     r'(^|[\s_\-])id($|[\s_\-])|_id$|^id_|transaction[_\s]?id|order[_\s]?id'
@@ -317,10 +218,6 @@ def is_id_like_col(col: str, series: pd.Series) -> bool:
     n_total  = max(len(series.dropna()), 1)
     return (n_unique / n_total) > 0.7
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# FIX #34: PERCENTAGE COLUMN DETECTION
-# ═══════════════════════════════════════════════════════════════════════════════
 
 def is_percentage_col(col: str, series: pd.Series) -> bool:
     col_lower = col.lower()
@@ -1658,76 +1555,25 @@ def is_raw_retrieval_query(query: str) -> bool:
 def detect_operation(query: str) -> str:
     q = query.lower()
 
-    operation_patterns = {
-        "count": [
-            r"\bcount\b",
-            r"\bhow many\b",
-            r"\bnumber of\b",
-            r"\bfrequency\b",
-        ],
-        
-        "unique_count": [
-            r"\bunique\b",
-            r"\bdistinct\b",
-            r"\bunique count\b",
-            r"\bdistinct count\b",
-        ],
+    if re.search(r"\b(count|how many|number of|frequency)\b", q):
+        return "count"
 
-        "unique_count": [
-            r"\bunique\b",
-            r"\bdistinct\b",
-            r"\bunique count\b",
-        ],
+    if re.search(r"\b(unique|distinct)\b", q):
+        return "unique_count"
 
-        "sum": [
-            r"\btotal\b",
-            r"\bsum\b",
-            r"\boverall\b",
-            r"\bcumulative\b",
-        ],
+    if re.search(r"\b(average|avg|mean)\b", q):
+        return "avg"
 
-        "avg": [
-            r"\baverage\b",
-            r"\bavg\b",
-            r"\bmean\b",
-        ],
+    if re.search(r"\b(total|sum|overall|cumulative)\b", q):
+        return "sum"
 
-        "min": [
-            r"\bminimum\b",
-            r"\bmin\b",
-            r"\blowest\b",
-            r"\bsmallest\b",
-        ],
+    if re.search(r"\b(minimum|min|smallest)\b", q):
+        return "min"
 
-        "max": [
-            r"\bmaximum\b",
-            r"\bmax\b",
-            r"\bhighest\b",
-            r"\blargest\b",
-            r"\bmost\b",
-            r"\bbest\b",
-            r"\btop\b",
-        ],
+    if re.search(r"\b(maximum|max)\b", q):
+        return "max"
 
-        "trend": [
-            r"\btrend\b",
-            r"\bover time\b",
-            r"\bgrowth\b",
-        ],
-
-        "comparison": [
-            r"\bcompare\b",
-            r"\bcomparison\b",
-            r"\bvs\b",
-            r"\bversus\b",
-        ],
-    }
-
-    for operation, patterns in operation_patterns.items():
-        if any(re.search(p, q) for p in patterns):
-            return operation
-
-    return "sum"
+    return None
 
 def is_categorical_distribution_query(query: str, meta: dict) -> Tuple[bool, Optional[str]]:
     q = query.lower()
@@ -2822,17 +2668,6 @@ def classify_query_intent_rule_based(query: str, roles: Dict[str, Any]) -> Tuple
     return "explanation", 0.2
 
 
-@dataclass
-class SemanticMatch:
-    """Result of semantic matching with ranked candidates."""
-    query_term: str
-    column_name: str
-    score: float                        # 0.0-1.0 confidence
-    match_type: str                     # exact, synonym, semantic, heuristic
-    explanation: str                    # Why this match
-
-
-# FIX #38 + #39: Semantic ranker (replaces heuristic matching)
 class SemanticRanker:
     """Ranks column candidates by semantic relevance with scoring."""
     
@@ -3363,31 +3198,6 @@ class ResponseRenderer:
                 "chart": result.get("chart")
             }
 
-
-@dataclass
-class QueryResolution:
-    """Multi-stage query resolution result with explicit stage outputs."""
-    intent: str                          # Stage 1: detected intent (trend, aggregation, etc.)
-    operations: List[str]                # Stage 2: detected operations (sum, group_by, filter, etc.)
-    semantic_mapping: Dict[str, str]     # Stage 3: query term → column mapping (e.g., "sales" → "revenue")
-    filters: Dict[str, Any]              # Stage 4: extracted constraints (value/range filters)
-    execution_plan: Optional[QueryPlan]  # Stage 5: final QueryPlan for execution
-    confidence: float                    # Overall confidence score (0.0-1.0)
-    resolution_score: float              # Quality of resolution (0.0-1.0)
-    issues: List[str]                   # Any ambiguities or concerns discovered
-    metadata: Dict[str, Any]             # Additional debug/resolution info
-
-    def to_dict(self) -> dict:
-        return {
-            "intent": self.intent,
-            "operations": self.operations,
-            "semantic_mapping": self.semantic_mapping,
-            "filters": self.filters,
-            "confidence": self.confidence,
-            "resolution_score": self.resolution_score,
-            "issues": self.issues,
-            "metadata": self.metadata
-        }
 
 
 def detect_operations(query: str, intent: str, roles: Dict[str, Any]) -> List[str]:
@@ -4799,10 +4609,6 @@ class AdaptiveLearner:
 
 adaptive_learner = AdaptiveLearner()
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# IMPROVEMENT #5: SMARTER VISUALIZATION INTELLIGENCE
-# ═══════════════════════════════════════════════════════════════════════════════
 
 class VisualizationSelector:
     """Intelligent chart selection based on data characteristics."""
