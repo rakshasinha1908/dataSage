@@ -1,2 +1,0 @@
-activate venv command - venv\Scripts\activate
-backend run - uvicorn app:app --reload
