@@ -14,6 +14,8 @@ class SessionManager:
     def save(cls, dataset: Dataset) -> str:
         session_id = str(uuid.uuid4())
 
+        dataset.session_id = session_id
+
         cls._sessions[session_id] = dataset
 
         return session_id

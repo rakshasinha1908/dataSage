@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import List, Optional
 
+from models.column_schema import ColumnSchema
 import pandas as pd
 
 
@@ -14,4 +15,6 @@ class Dataset:
 
     filename: str
 
-    schema: Dict = field(default_factory=dict)
+    session_id: Optional[str] = None
+
+    schema: List[ColumnSchema] = field(default_factory=list)
