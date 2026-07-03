@@ -19,11 +19,14 @@ class SchemaEngine:
             series = dataframe[column]
 
             column_schema = ColumnSchema(
-                name=column,
+                name=str(column),
                 dtype=str(series.dtype),
-                nullable=series.isnull().any(),
-                unique_count=series.nunique(dropna=True),
-                sample_values=series.dropna().unique().tolist()[:5]
+                nullable=bool(series.isnull().any()),
+                unique_count=int(series.nunique(dropna=True)),
+                sample_values=[
+                    value.item() if hasattr(value, "item") else value
+                    for value in series.dropna().unique().tolist()[:5]
+                ]
             )
 
             schema.append(column_schema)
