@@ -1,0 +1,151 @@
+customer_id,customer_full_name,customer_email,product_name,product_category,transaction_amount,transaction_mode,discount_applied,membership_customer,prepaid_order,city,phone_number,order_timestamp,comments
+505,Jai Doctor,lopasoni@example.org,Nike Shoes,Home Appliances,6200.4,UPI,FALSE,TRUE,TRUE,Chennai,6923551937,2024-04-18,No comments
+233,Tanveer Bassi,qsaraf@example.com,Nike Shoes,Fashion,7004.54,Card,FALSE,FALSE,FALSE,Delhi,00833883522,2024-01-18,Good product
+671,Max Bhardwaj,rajatashetty@example.com,HP Laptop,Fashion,5245.56,Card,FALSE,FALSE,TRUE,Bangalore,+911691581796,2023-04-05,Good product
+451,Saumya Sunder,harshil81@example.org,HP Laptop,Electronics,6496.58,Cash,TRUE,FALSE,FALSE,Chennai,09968993584,2024-04-04,Good product
+614,Samarth Joshi,saxenakashvi@example.net,HP Laptop,Electronics,6616.56,Card,TRUE,FALSE,TRUE,Chennai,00802155480,2023-09-04,Slow delivery
+559,Hema Baria,harrison13@example.net,Canon Camera,Electronics,8794.51,UPI,FALSE,TRUE,TRUE,Mumbai,00000415115,2024-12-10,Fast delivery
+516,Veer Tailor,vasaaadi@example.org,HP Laptop,Fashion,5288.32,Cash,FALSE,FALSE,FALSE,Delhi,08320298959,2022-04-20,Good product
+678,Ayaan Gole,snehanagi@example.org,Apple iPhone,Electronics,7471.1,UPI,TRUE,TRUE,TRUE,Kolkata,6841458001,2025-02-25,No comments
+390,Tejas Bala,gmagar@example.com,HP Laptop,Toys,6824.12,UPI,TRUE,TRUE,FALSE,Mumbai,7450996304,2024-12-07,Bad service
+351,Charita Nath,nkhanna@example.org,Nike Shoes,Fashion,9833.21,UPI,FALSE,TRUE,FALSE,Delhi,04374087434,2021-07-11,Good product
+384,Ekbal Devi,madhav45@example.org,HP Laptop,Fashion,6407.97,UPI,FALSE,TRUE,FALSE,Mumbai,4036406452,2026-04-08,No comments
+497,Janya Ramachandran,kakarharinakshi@example.net,Canon Camera,Electronics,9503.41,UPI,TRUE,FALSE,FALSE,Delhi,6736070478,2023-05-29,Good product
+329,Vamakshi Keer,narangomaja@example.org,Samsung TV,Fashion,5734.76,Card,TRUE,FALSE,TRUE,Bangalore,0208683224,2025-05-22,Slow delivery
+726,Banjeet Ramakrishnan,yashvibehl@example.com,Canon Camera,Sports,2321.58,UPI,TRUE,FALSE,TRUE,Bangalore,05343458549,2025-04-19,Fast delivery
+413,Yutika Baral,dakshthaker@example.com,Nike Shoes,Fashion,781.88,UPI,TRUE,TRUE,TRUE,Bangalore,02255925599,2021-09-26,No comments
+563,Aarav Arora,manthankala@example.org,Canon Camera,Fashion,4457.75,UPI,FALSE,FALSE,FALSE,Chennai,2864573756,2022-04-28,Good product
+78,Ladli Mammen,xvenkatesh@example.net,HP Laptop,Electronics,2519.01,UPI,FALSE,FALSE,TRUE,Bangalore,05392934378,2023-01-20,Good product
+399,Wridesh Borah,zbali@example.org,Nike Shoes,Home Appliances,5192.21,UPI,TRUE,FALSE,FALSE,Kolkata,00306032255,2022-10-15,No comments
+492,Pahal Wason,tramaswamy@example.com,Samsung TV,Electronics,4438.47,UPI,TRUE,TRUE,TRUE,Kolkata,02719856105,2021-09-21,Fast delivery
+328,Jai Mahajan,tanaydivan@example.com,Apple iPhone,Home Appliances,5874.35,UPI,FALSE,FALSE,TRUE,Mumbai,05589888860,2025-01-30,Good product
+623,Yashasvi Wadhwa,rajagopalanelijah@example.com,HP Laptop,Sports,5342.42,UPI,TRUE,TRUE,FALSE,Kolkata,+914539272181,2023-06-19,Good product
+625,Suhani Sani,divanvarenya@example.org,HP Laptop,Home Appliances,5769.1,Card,FALSE,FALSE,TRUE,Kolkata,1112277340,2022-05-20,Slow delivery
+471,Indali Sani,atikoshy@example.com,Canon Camera,Toys,4118.49,Cash,TRUE,TRUE,TRUE,Mumbai,9124243976,2022-07-01,Good product
+687,Dalaja Dey,aarna40@example.net,Nike Shoes,Home Appliances,5618.14,UPI,TRUE,FALSE,FALSE,Kolkata,8997739724,2026-02-11,Good product
+724,Ishaan Sama,omkaar14@example.com,HP Laptop,Toys,2265.72,Card,TRUE,FALSE,TRUE,Chennai,1866993357,2025-01-17,Slow delivery
+688,Falan Bumb,sharmagavin@example.com,Canon Camera,Electronics,5142.37,Card,FALSE,FALSE,FALSE,Bangalore,8832979298,2022-10-25,Good product
+614,Widisha Mohan,adwetachacko@example.org,Canon Camera,Electronics,4728.32,Cash,TRUE,TRUE,TRUE,Mumbai,2797064239,2021-07-15,Bad service
+509,Irya Cherian,chatreshrai@example.net,Canon Camera,Electronics,6074.27,Card,FALSE,TRUE,FALSE,Delhi,9507284224,2022-02-01,Bad service
+449,Zansi Memon,pantsachi@example.net,HP Laptop,Fashion,3956.45,UPI,TRUE,FALSE,TRUE,Bangalore,01817648054,2022-12-20,Good product
+576,Anvi Murty,saanviprabhu@example.com,Apple iPhone,Toys,7970.45,Card,FALSE,TRUE,FALSE,Kolkata,02224597553,2023-03-26,Fast delivery
+580,Anay Parmar,ctak@example.com,HP Laptop,Home Appliances,6352.81,UPI,TRUE,TRUE,FALSE,Bangalore,01633978347,2023-09-14,Bad service
+100,Gaurangi Gandhi,sai22@example.com,Apple iPhone,Electronics,5503.99,UPI,TRUE,FALSE,FALSE,Bangalore,7313418638,2026-03-22,Fast delivery
+632,Rachit Amble,niteshpandit@example.net,HP Laptop,Fashion,3110.37,Card,TRUE,TRUE,TRUE,Chennai,09731472945,2022-10-17,Good product
+615,Quincy Arya,rdube@example.com,Canon Camera,Fashion,3274.63,UPI,TRUE,FALSE,TRUE,Kolkata,6433066485,2024-03-18,Slow delivery
+542,Balveer Handa,jonathan21@example.org,Samsung TV,Home Appliances,7621.84,UPI,FALSE,TRUE,TRUE,Chennai,02125636328,2026-05-05,Fast delivery
+855,Divya Bali,gsaraf@example.com,Nike Shoes,Home Appliances,5814.4,UPI,TRUE,FALSE,FALSE,Kolkata,7313681172,2025-10-06,Good product
+471,Yoshita Garde,gerazehaan@example.org,Canon Camera,Fashion,7275.37,UPI,TRUE,TRUE,TRUE,Bangalore,+911087883381,2026-05-12,Good product
+515,Nathan Joshi,desailipika@example.net,Nike Shoes,Home Appliances,8791.7,Card,TRUE,FALSE,TRUE,Delhi,+917714011173,2022-11-05,Good product
+857,Oscar Parmar,shravyabhagat@example.com,Canon Camera,Electronics,5593.56,UPI,FALSE,FALSE,FALSE,Chennai,08437545072,2023-12-10,Good product
+604,Anirudh Bedi,rkala@example.org,HP Laptop,Fashion,1392.6,UPI,TRUE,TRUE,FALSE,Kolkata,1596393417,2021-07-25,Good product
+529,Chakradhar Ramanathan,amaira05@example.net,Canon Camera,Electronics,4019.24,Cash,FALSE,FALSE,FALSE,Chennai,0854283543,2025-12-18,No comments
+374,Frado Baral,dhingrakashish@example.org,HP Laptop,Sports,3520.07,Cash,TRUE,FALSE,TRUE,Chennai,9426460788,2022-10-29,Good product
+605,Eiravati Gokhale,gtoor@example.org,Nike Shoes,Electronics,5528.68,UPI,FALSE,TRUE,FALSE,Chennai,+918294944482,2023-07-07,Good product
+597,Pratyush Sankar,gpal@example.org,Samsung TV,Electronics,5259.11,UPI,TRUE,TRUE,TRUE,Bangalore,+911746377618,2024-11-26,Good product
+997,Aashi Dhawan,tataanthony@example.net,Apple iPhone,Home Appliances,4236.06,Cash,FALSE,FALSE,FALSE,Chennai,+916003675735,2025-12-10,Good product
+440,Aadi Rana,madhavidas@example.net,Nike Shoes,Electronics,7094.76,Card,FALSE,FALSE,FALSE,Bangalore,+911252736297,2023-11-05,Good product
+378,Dayita Sama,vedhikakaur@example.org,Canon Camera,Fashion,6743.67,Cash,TRUE,FALSE,FALSE,Bangalore,0306789649,2022-03-14,Fast delivery
+504,Kashish Sha,rchacko@example.org,Samsung TV,Fashion,8904.85,UPI,TRUE,TRUE,TRUE,Kolkata,05358697557,2024-10-25,Bad service
+241,Qabil Contractor,nmitra@example.org,HP Laptop,Home Appliances,4758.75,UPI,TRUE,TRUE,TRUE,Mumbai,+910690052753,2021-09-26,Good product
+500,Aarav Chauhan,vidhi05@example.net,HP Laptop,Electronics,4518.22,UPI,FALSE,TRUE,FALSE,Delhi,+916474100466,2025-12-30,Fast delivery
+734,Fariq Dugal,itella@example.com,Nike Shoes,Electronics,6170.34,UPI,TRUE,TRUE,TRUE,Kolkata,00119611228,2022-12-20,Good product
+604,Theodore Guha,sara62@example.org,Samsung TV,Electronics,8276.85,Card,TRUE,FALSE,FALSE,Kolkata,08509244189,2026-04-18,No comments
+740,Chakradhar Mishra,vihaan20@example.org,Nike Shoes,Fashion,4147.38,UPI,FALSE,TRUE,TRUE,Mumbai,02457320343,2023-09-22,Good product
+390,Samarth Gulati,chandreshrajagopal@example.com,HP Laptop,Electronics,3778.5,Card,TRUE,TRUE,TRUE,Delhi,+910013608975,2026-04-20,Fast delivery
+707,Tanmayi Wable,aachal75@example.com,HP Laptop,Electronics,3249.68,UPI,FALSE,TRUE,TRUE,Chennai,04599171407,2023-02-01,Good product
+261,Chandran Shenoy,ekavir45@example.com,HP Laptop,Fashion,5791.54,UPI,FALSE,FALSE,FALSE,Delhi,1488379311,2022-10-05,No comments
+634,Ikbal Baria,kashish17@example.org,Apple iPhone,Electronics,5060.39,Cash,TRUE,FALSE,FALSE,Mumbai,+911254563167,2023-08-30,Fast delivery
+397,Aarav Gandhi,unnatinarain@example.net,Samsung TV,Electronics,4140.23,UPI,FALSE,TRUE,TRUE,Chennai,+911684792763,2022-05-21,Bad service
+390,Darsh Wable,golalucky@example.com,Canon Camera,Fashion,4834.2,Card,FALSE,TRUE,TRUE,Mumbai,+914263963821,2025-04-21,Good product
+666,Manbir Krishna,gaurang66@example.net,Canon Camera,Home Appliances,6227.17,UPI,FALSE,TRUE,TRUE,Chennai,04794740087,2023-03-08,Good product
+533,Sanaya Korpal,pshan@example.org,Nike Shoes,Electronics,5292.54,Card,TRUE,FALSE,FALSE,Mumbai,01485975191,2024-05-27,Good product
+331,Nitara Lanka,kantkrishna@example.net,HP Laptop,Home Appliances,7340.99,UPI,TRUE,FALSE,TRUE,Chennai,6796489959,2022-03-15,Good product
+540,Ansh Mander,kalaranveer@example.org,Canon Camera,Electronics,5872.48,UPI,TRUE,TRUE,TRUE,Mumbai,02205022947,2022-06-13,Good product
+333,Nandini Palan,danielapte@example.net,Apple iPhone,Home Appliances,5665.36,Card,TRUE,TRUE,FALSE,Mumbai,+911387114759,2024-09-29,Good product
+637,Waida Pillay,sudiksha29@example.org,Nike Shoes,Toys,7724.74,Cash,TRUE,TRUE,FALSE,Kolkata,3992766923,2022-11-06,Good product
+785,Ekani Lal,ldua@example.org,Apple iPhone,Electronics,7642.66,Card,FALSE,TRUE,FALSE,Bangalore,+915469640818,2022-07-05,Slow delivery
+560,Dev Bhagat,nakshgrover@example.com,HP Laptop,Home Appliances,4636.84,UPI,TRUE,FALSE,TRUE,Mumbai,2296173996,2023-09-24,Good product
+203,Maanas Kuruvilla,mdeshmukh@example.org,Canon Camera,Home Appliances,3707.79,UPI,TRUE,TRUE,FALSE,Kolkata,1921395379,2026-03-14,Fast delivery
+542,Advik Khalsa,ucchalbrar@example.net,Nike Shoes,Electronics,4149.44,UPI,TRUE,FALSE,TRUE,Chennai,+917087157887,2025-12-21,Fast delivery
+639,Baljiwan Vohra,mangatlavanya@example.org,Samsung TV,Home Appliances,5224.7,UPI,TRUE,TRUE,FALSE,Mumbai,+918710970249,2024-04-13,Good product
+334,Ekanta Master,ekota@example.net,Canon Camera,Electronics,8410.28,UPI,FALSE,TRUE,TRUE,Chennai,01698190441,2022-08-14,Good product
+751,Varsha Behl,harinakshichatterjee@example.net,Nike Shoes,Fashion,5260.48,UPI,TRUE,TRUE,TRUE,Mumbai,1896619247,2023-12-11,Good product
+637,Pavani Venkatesh,mdas@example.com,Nike Shoes,Sports,5672.67,Card,FALSE,FALSE,TRUE,Bangalore,+913458915338,2024-10-26,No comments
+181,Ekalinga Choudhry,agandhi@example.com,Apple iPhone,Fashion,6989.78,UPI,TRUE,FALSE,FALSE,Mumbai,4713526383,2026-02-20,Bad service
+407,Victor Sethi,ganga96@example.net,Nike Shoes,Fashion,5095.82,Card,TRUE,TRUE,FALSE,Delhi,09031992894,2022-02-06,Fast delivery
+794,Ranveer Lal,bimala71@example.org,Apple iPhone,Electronics,1563.35,UPI,FALSE,FALSE,TRUE,Delhi,01993778364,2025-06-08,Good product
+363,Triya Wali,ria54@example.org,Nike Shoes,Electronics,2871.96,UPI,FALSE,TRUE,TRUE,Delhi,00027494586,2025-01-17,Fast delivery
+390,Abdul Sankar,hamsinimutti@example.net,Apple iPhone,Fashion,4752.72,UPI,TRUE,TRUE,FALSE,Chennai,+912128133799,2022-10-23,Good product
+410,Yadavi Narasimhan,fiyaz72@example.org,Nike Shoes,Electronics,3216.33,UPI,TRUE,TRUE,TRUE,Delhi,+911672115065,2025-12-13,No comments
+395,Orinder Soni,edwinaradhana@example.net,Apple iPhone,Electronics,4212.6,Cash,TRUE,TRUE,TRUE,Bangalore,6838807670,2025-06-03,No comments
+343,Ekaja Rana,gopalagate@example.org,Apple iPhone,Toys,5225.51,UPI,FALSE,TRUE,TRUE,Chennai,+912156745203,2025-09-17,Good product
+296,Jagvi Bala,upkaar47@example.com,Samsung TV,Fashion,6150.87,UPI,TRUE,FALSE,TRUE,Mumbai,00229787181,2022-10-30,Good product
+268,Tanveer Korpal,ishita04@example.com,Canon Camera,Home Appliances,8823.74,UPI,FALSE,FALSE,FALSE,Mumbai,9197794136,2021-11-24,Good product
+773,Hredhaan Doshi,rushil57@example.net,Samsung TV,Electronics,737.48,UPI,FALSE,TRUE,FALSE,Chennai,09146276132,2024-07-12,Bad service
+537,Udyati Basak,spradhan@example.net,Apple iPhone,Electronics,3259.26,UPI,FALSE,FALSE,TRUE,Kolkata,4925850105,2025-02-06,Good product
+630,Manan Puri,prashadpranit@example.com,Apple iPhone,Toys,3524.87,UPI,TRUE,FALSE,TRUE,Chennai,07639380004,2023-02-09,Good product
+579,Ekansh Prashad,basuimaran@example.net,Samsung TV,Electronics,5014.26,Card,TRUE,TRUE,FALSE,Bangalore,+912565452291,2023-01-18,Fast delivery
+353,Yauvani Sant,krishsetty@example.net,Apple iPhone,Electronics,4797.72,UPI,TRUE,FALSE,FALSE,Kolkata,2560629933,2022-06-05,No comments
+394,Mason Dyal,chayre@example.com,Samsung TV,Home Appliances,4272.6,UPI,TRUE,TRUE,FALSE,Kolkata,3676561788,2025-11-03,Good product
+630,Ekiya Goswami,edutt@example.org,Canon Camera,Home Appliances,6616.34,Card,TRUE,TRUE,TRUE,Chennai,09339238999,2022-09-05,Fast delivery
+651,David Upadhyay,watikaramachandran@example.org,HP Laptop,Home Appliances,3655.38,Cash,FALSE,TRUE,TRUE,Delhi,1769142036,2025-09-18,Fast delivery
+729,Aarnav Jaggi,chaitanya74@example.org,Apple iPhone,Fashion,5432.15,Card,TRUE,FALSE,TRUE,Bangalore,5703033791,2022-10-24,Bad service
+453,Abhimanyu Dora,xchauhan@example.net,Samsung TV,Toys,7134.9,Cash,TRUE,FALSE,FALSE,Chennai,4330350636,2023-03-25,Good product
+495,Bina Mane,niteshshukla@example.net,HP Laptop,Sports,6108.19,UPI,FALSE,FALSE,TRUE,Mumbai,+917599176501,2025-04-06,No comments
+377,Dayita Nath,mshukla@example.net,Apple iPhone,Electronics,5008.47,UPI,FALSE,FALSE,TRUE,Chennai,00008341877,2022-03-18,Fast delivery
+171,Ekaja Singh,varsha23@example.net,Apple iPhone,Electronics,4900.14,Cash,TRUE,FALSE,FALSE,Kolkata,+912751987933,2025-06-09,Good product
+653,Radhika Bhatti,hkhanna@example.com,Canon Camera,Home Appliances,5603.65,UPI,FALSE,FALSE,TRUE,Mumbai,8906208754,2023-06-11,Good product
+891,Agastya Hora,rmandal@example.com,Nike Shoes,Electronics,1756.68,Card,FALSE,FALSE,TRUE,Mumbai,03849369615,2024-07-12,No comments
+481,Anvi Bobal,umand@example.org,HP Laptop,Sports,1932.84,UPI,TRUE,FALSE,FALSE,Kolkata,+917120796834,2025-10-30,Fast delivery
+952,Chavvi Sharma,magate@example.org,HP Laptop,Electronics,6550.34,Card,TRUE,FALSE,FALSE,Bangalore,09017137026,2026-03-29,Slow delivery
+748,Pavani Dube,gaurikamital@example.net,Apple iPhone,Home Appliances,3494.36,Card,FALSE,FALSE,FALSE,Kolkata,+914749877026,2023-05-30,Slow delivery
+589,Zaid Sheth,nimratmann@example.com,Samsung TV,Toys,1277.33,UPI,FALSE,FALSE,TRUE,Chennai,04766623740,2025-11-23,Slow delivery
+814,Tanmayi Menon,manevivaan@example.com,Samsung TV,Home Appliances,4595.44,UPI,FALSE,FALSE,TRUE,Kolkata,+910748646544,2024-11-30,Bad service
+462,Vasudha Kant,forum16@example.net,Samsung TV,Electronics,2501.68,UPI,FALSE,TRUE,FALSE,Chennai,2775953859,2022-01-19,Good product
+387,Karan Palla,nitarayadav@example.org,HP Laptop,Fashion,4849.43,Cash,TRUE,TRUE,FALSE,Chennai,+915615938569,2022-03-04,Bad service
+781,Ayush Kara,khuranachanakya@example.org,Samsung TV,Electronics,719.47,UPI,TRUE,TRUE,TRUE,Kolkata,+916997791842,2022-03-11,Bad service
+333,Atharv Kapoor,uvarkey@example.org,Samsung TV,Home Appliances,7069.94,UPI,TRUE,TRUE,TRUE,Chennai,6406911631,2023-11-28,Bad service
+810,Wridesh Shroff,eiravatiravel@example.com,Nike Shoes,Fashion,8753.59,Card,TRUE,TRUE,FALSE,Mumbai,6975381152,2024-05-26,Fast delivery
+368,Krish Salvi,taurora@example.com,Canon Camera,Electronics,5647.84,UPI,FALSE,TRUE,TRUE,Mumbai,+918988895698,2024-06-09,Good product
+426,Bhavna Narasimhan,batraazad@example.org,Canon Camera,Toys,6890.11,Card,FALSE,FALSE,TRUE,Kolkata,02143515735,2026-03-12,Good product
+578,Shivansh Bassi,dixitjack@example.org,Apple iPhone,Fashion,1256.53,Card,TRUE,TRUE,TRUE,Bangalore,06299661058,2023-05-22,Bad service
+488,Alexander Rajagopal,vyasriya@example.org,Canon Camera,Electronics,9651.76,UPI,TRUE,TRUE,TRUE,Mumbai,+914352038459,2024-08-28,No comments
+701,Madhav Natt,gaurika61@example.org,Canon Camera,Sports,6304.41,UPI,FALSE,FALSE,FALSE,Bangalore,+912752253556,2023-05-24,Good product
+325,Liam Sharma,lvyas@example.net,Nike Shoes,Fashion,5002.67,UPI,FALSE,FALSE,FALSE,Delhi,+918375966564,2024-09-08,Bad service
+412,Yamini Dugal,suritriveni@example.com,Nike Shoes,Sports,5462.08,UPI,FALSE,TRUE,TRUE,Bangalore,2113037434,2023-12-01,Good product
+420,Vidhi Mishra,veda33@example.net,HP Laptop,Home Appliances,10000,UPI,FALSE,TRUE,TRUE,Chennai,08826104301,2023-04-20,Good product
+748,Anya Rao,valaranveer@example.org,Canon Camera,Electronics,5689.96,UPI,TRUE,FALSE,FALSE,Delhi,0213794888,2023-12-02,Fast delivery
+605,Vaishnavi Sunder,agatedamini@example.org,Nike Shoes,Fashion,5556.88,UPI,TRUE,TRUE,FALSE,Chennai,+914615890361,2024-09-19,Bad service
+254,Qabil Parekh,sachi10@example.com,Canon Camera,Electronics,2377.6,UPI,FALSE,TRUE,TRUE,Chennai,+918434614679,2022-03-11,Bad service
+323,Nitara Luthra,devangaurangi@example.org,Canon Camera,Electronics,7921.16,UPI,TRUE,FALSE,FALSE,Chennai,7005066133,2023-06-04,Good product
+654,Karan Mandal,ramanvi@example.net,Samsung TV,Fashion,4979.77,Cash,TRUE,TRUE,FALSE,Delhi,+910824115293,2024-10-31,Good product
+424,Sathvik Bath,uchawla@example.com,Canon Camera,Fashion,4943.39,UPI,FALSE,TRUE,TRUE,Bangalore,+917582907338,2025-01-15,No comments
+412,Unni Rastogi,amritakumer@example.com,Canon Camera,Home Appliances,5412.76,UPI,FALSE,TRUE,TRUE,Mumbai,+912563947871,2023-06-01,Bad service
+343,Jason Dasgupta,ekantika33@example.com,Samsung TV,Fashion,4311.7,UPI,TRUE,FALSE,FALSE,Chennai,02519091446,2024-02-27,Fast delivery
+634,Siddharth Taneja,wpau@example.net,HP Laptop,Toys,2263.66,Cash,TRUE,FALSE,TRUE,Mumbai,08357378927,2022-11-15,Good product
+415,Ekavir Murty,wazirkumar@example.net,Canon Camera,Home Appliances,6584.06,Cash,TRUE,FALSE,FALSE,Delhi,09093583992,2023-10-25,Good product
+699,Max Badal,chatterjeeneelima@example.net,Nike Shoes,Fashion,6778.37,Card,FALSE,FALSE,TRUE,Mumbai,05112528643,2022-06-23,No comments
+140,Riya Gokhale,ucchal17@example.com,Canon Camera,Fashion,4582.09,UPI,TRUE,TRUE,FALSE,Bangalore,+915069353272,2023-04-07,Fast delivery
+603,Hemal Kade,baralhamsini@example.org,Samsung TV,Home Appliances,4389.12,UPI,TRUE,TRUE,TRUE,Delhi,1005450246,2026-02-27,Good product
+331,Ekalinga Kadakia,urmibhargava@example.net,Canon Camera,Fashion,6558.95,Cash,TRUE,FALSE,TRUE,Mumbai,9438159055,2025-05-09,Good product
+380,Krishna Munshi,yashawinipadmanabhan@example.net,Samsung TV,Fashion,7872.78,UPI,FALSE,FALSE,TRUE,Bangalore,+915702565303,2022-06-12,Bad service
+453,Vidhi Kulkarni,shivanshbrar@example.com,HP Laptop,Sports,4756.66,UPI,TRUE,FALSE,TRUE,Chennai,00647242099,2024-09-26,Good product
+879,Naksh Pradhan,goswamiowen@example.org,Nike Shoes,Electronics,5261.7,Card,TRUE,FALSE,FALSE,Chennai,05944641191,2024-08-28,Fast delivery
+446,Saumya Vaidya,anya06@example.net,HP Laptop,Home Appliances,7534.33,Card,TRUE,TRUE,TRUE,Delhi,2852006654,2022-03-12,Good product
+626,Watika Nadig,wmaharaj@example.com,Nike Shoes,Sports,5954.76,Card,TRUE,TRUE,FALSE,Kolkata,+910582678458,2023-06-09,Good product
+506,Oviya Walla,anusha90@example.com,Canon Camera,Fashion,5388.6,UPI,TRUE,TRUE,TRUE,Bangalore,2308754671,2023-09-24,No comments
+576,Vasatika Rastogi,xkulkarni@example.net,HP Laptop,Electronics,6651.5,Cash,FALSE,TRUE,TRUE,Mumbai,3753482299,2021-05-24,No comments
+512,Zashil Doctor,nandaneel@example.com,Samsung TV,Electronics,1962.64,Cash,FALSE,FALSE,TRUE,Kolkata,+910236910301,2021-07-08,Fast delivery
+330,Geetika Chana,tmishra@example.com,Canon Camera,Home Appliances,5983.99,Card,FALSE,FALSE,TRUE,Kolkata,8367832558,2023-03-19,Good product
+595,Logan Din,chavvisachdev@example.net,Samsung TV,Electronics,4978.12,UPI,TRUE,TRUE,FALSE,Chennai,+912630498800,2023-08-19,Good product
+1,Omya Mitra,nayarjalsa@example.com,Canon Camera,Toys,8343.65,UPI,FALSE,FALSE,FALSE,Chennai,+918602219158,2025-06-05,Good product
+559,Kabir Swaminathan,mnadig@example.com,Canon Camera,Sports,3764.8,Cash,FALSE,FALSE,TRUE,Delhi,2087238702,2024-11-07,Good product
+418,Sai Chander,wlad@example.net,Nike Shoes,Sports,2591.02,Card,TRUE,TRUE,FALSE,Chennai,00247411456,2023-11-29,Fast delivery
+611,Rushil Raju,tanvi27@example.com,Nike Shoes,Home Appliances,3045.18,UPI,FALSE,TRUE,TRUE,Kolkata,+915029872271,2024-07-15,Good product
+585,Rayaan Badami,ishwarpai@example.com,Nike Shoes,Home Appliances,2878.98,UPI,FALSE,FALSE,TRUE,Chennai,+916661145328,2024-09-19,Good product
+255,Dhriti Wadhwa,waliarin@example.net,Nike Shoes,Electronics,2662.24,Card,FALSE,TRUE,FALSE,Delhi,9778555182,2021-06-29,Fast delivery
+484,Bina Hari,vedacheema@example.com,HP Laptop,Electronics,795.55,UPI,FALSE,FALSE,TRUE,Chennai,+914839128100,2025-09-04,Bad service
+195,Jasmit Venkatesh,dbhandari@example.com,Nike Shoes,Electronics,3979.39,UPI,FALSE,TRUE,TRUE,Kolkata,08173489211,2023-02-12,Bad service
+284,Ekta Sood,pbaral@example.net,HP Laptop,Electronics,4248.22,UPI,FALSE,TRUE,FALSE,Bangalore,5429023961,2021-07-02,Bad service
+875,Fariq Soman,loyalvrishti@example.net,Canon Camera,Electronics,5879.69,UPI,TRUE,TRUE,FALSE,Kolkata,+916431596858,2022-12-10,Fast delivery

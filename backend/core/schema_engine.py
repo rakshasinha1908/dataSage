@@ -1,6 +1,6 @@
 from models.column_schema import ColumnSchema
 from models.dataset import Dataset
-
+from utils.text_utils import normalize_text
 
 class SchemaEngine:
     """
@@ -20,6 +20,7 @@ class SchemaEngine:
 
             column_schema = ColumnSchema(
                 name=str(column),
+                normalized_name=normalize_text(str(column)),
                 dtype=str(series.dtype),
                 nullable=bool(series.isnull().any()),
                 unique_count=int(series.nunique(dropna=True)),

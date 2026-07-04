@@ -10,6 +10,8 @@ class ColumnSchema:
 
     name: str
 
+    normalized_name: str
+
     dtype: str
 
     nullable: bool

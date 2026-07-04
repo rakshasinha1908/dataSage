@@ -25,6 +25,7 @@ def get_schema(session_id: str):
         "columns": [
             {
                 "name": column.name,
+                "normalized_name": column.normalized_name,
                 "dtype": column.dtype,
                 "nullable": column.nullable,
                 "unique_count": column.unique_count,
