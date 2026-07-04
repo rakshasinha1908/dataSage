@@ -1,370 +1,240 @@
 # DataSage
 
-> **DataSage is an experimental AI-powered analytics engine that converts natural language questions into structured analytical operations on datasets.**
->
-> The project combines dataset intelligence, query planning, deterministic execution, and explainable analytics to make data exploration more accessible without sacrificing transparency.
+> **DataSage is an analytics engine that understands datasets before answering questions.**
 
----
+DataSage allows users to upload structured datasets (CSV files) and interact with them using natural language.
 
-# Overview
-
-DataSage is a natural-language analytics platform designed to help users explore and analyze structured datasets without writing SQL, formulas, or complex analytical code.
-
-Users can upload a dataset and ask questions such as:
-
-* What is the average transaction amount?
-* Show the top 10 products by revenue.
-* Which region generated the highest sales?
-* How many prepaid orders were completed?
-* Show monthly sales trends.
-* Compare revenue across customer segments.
-
-Instead of relying solely on text generation, DataSage attempts to understand the structure of the dataset, build an execution plan, perform deterministic calculations, and present results in a meaningful format.
+Unlike general-purpose AI assistants, DataSage does **not** rely on large language models to perform calculations. Instead, it combines deterministic data analysis with natural language understanding to produce reliable, reproducible, and explainable analytical results.
 
 ---
 
 # Why DataSage?
 
-A common question is:
+Most AI assistants can understand questions.
 
-> "Why build DataSage when ChatGPT, Claude, Gemini, and other AI tools can already analyze datasets?"
+Most analytics tools can execute calculations.
 
-It's a fair question.
+DataSage is designed to bridge those two worlds.
 
-The answer is that DataSage is not trying to replace general-purpose AI assistants. Instead, it focuses on a different problem: turning dataset analysis into a structured, repeatable, and explainable process.
+Instead of asking users to write SQL or Pandas code, DataSage translates natural language into deterministic analytical operations executed directly in Python.
 
-Large language models are extremely capable at understanding questions and generating insights. However, business analytics often requires more than natural language understanding:
+This approach provides:
 
-* Consistent interpretation of dataset schemas
-* Reliable aggregation and filtering
-* Deterministic calculations
-* Explainable analytical decisions
-* Validation and error handling
-* Reproducible results
-
-A general AI assistant may answer a question correctly, but the reasoning process is often hidden and may vary between runs.
-
-DataSage aims to bridge the gap between conversational AI and analytical systems by combining natural language interaction with structured execution.
-
-Instead of directly generating answers, DataSage attempts to:
-
-1. Understand the dataset structure.
-2. Identify the user's analytical intent.
-3. Build an execution plan.
-4. Execute calculations deterministically.
-5. Present results with context and explanations.
-
-The objective is not to compete with ChatGPT or Claude.
-
-The objective is to build a specialized analytics layer that can work alongside them.
-
-In the same way that a spreadsheet is different from a word processor, DataSage is designed to solve a different category of problems than a general-purpose AI assistant.
+- Reliable calculations
+- Reproducible results
+- Explainable execution
+- Dataset-aware reasoning
+- Minimal hallucinations
 
 ---
 
-# Key Features
+# Design Philosophy
 
-## Dataset Intelligence
+DataSage follows a few core engineering principles.
 
-Before answering questions, DataSage analyzes uploaded datasets and attempts to understand:
+### Correctness over cleverness
 
-* Numeric columns
-* Categorical columns
-* Date/time columns
-* Identifier fields
-* Boolean fields
-* Free-text fields
-* Semantic column roles
+Reliable analytical results are more valuable than complex AI reasoning.
 
-This enables the system to reason about what analyses are possible and which columns are most relevant for a given question.
+### Python first. AI second.
+
+If Python can perform an operation deterministically, Python should perform it.
+
+AI is only used where language understanding genuinely adds value.
+
+### One module. One responsibility.
+
+Each component has a clearly defined purpose, making the codebase easy to understand, maintain, and extend.
+
+### Dataset intelligence before question answering.
+
+Every uploaded dataset is understood first through schema generation before any user query is processed.
 
 ---
 
-## Natural Language Querying
+# How It Works
 
-Users can interact with datasets conversationally.
-
-Example:
-
-**Question**
-
-```text
-Average sales by product category
 ```
-
-**Internal Understanding**
-
-```text
-Intent: Aggregation
-Metric: Sales
-Group By: Product Category
-Operation: Average
-```
-
-This intermediate planning layer helps improve consistency and explainability.
-
----
-
-## Deterministic Analytics
-
-Whenever possible, DataSage performs calculations directly on the dataset instead of relying on generated answers.
-
-Supported analytical operations include:
-
-* Sum
-* Average
-* Count
-* Median
-* Ranking
-* Trend Analysis
-* Distribution Analysis
-* Comparison Analysis
-* Correlation Analysis
-
-This approach reduces hallucinations and improves result reliability.
-
----
-
-## Explainable Query Processing
-
-DataSage is designed to expose how it interprets a query.
-
-The system can surface information such as:
-
-* Detected intent
-* Selected metric
-* Grouping dimensions
-* Applied filters
-* Confidence indicators
-* Execution strategy
-
-The goal is to make analytical decisions transparent rather than hidden behind a black box.
-
----
-
-# Example Queries
-
-### KPI Queries
-
-```text
-What is the average transaction amount?
-```
-
-```text
-How many prepaid orders were completed?
+             Upload Dataset
+                    │
+                    ▼
+           Dataset Manager
+                    │
+                    ▼
+            Schema Generation
+                    │
+                    ▼
+          Query Understanding
+                    │
+                    ▼
+         Deterministic Analytics
+                    │
+                    ▼
+            Response Generation
 ```
 
 ---
 
-### Ranking Queries
+# Current Progress
 
-```text
-Show the top 10 products by revenue.
+## Completed
+
+- Dataset upload pipeline
+- Session management
+- Automatic schema generation
+- Schema inspection API
+- Dataset metadata extraction
+- Modular backend architecture
+
+## In Progress
+
+- Query parsing
+- Operation detection
+- Column matching
+
+## Planned
+
+- Analytics engine
+- Filtering
+- Grouping
+- Ranking
+- Trend analysis
+- AI-powered insights
+- Interactive visualizations
+
+---
+
+# Project Structure
+
+```
+backend/
+│
+├── api/
+├── core/
+├── models/
+├── query/
+├── storage/
+├── utils/
+│
+└── app.py
 ```
 
-```text
-Which region generated the highest sales?
+---
+
+# Technology Stack
+
+### Backend
+
+- FastAPI
+- Pandas
+
+### Frontend
+
+- React
+- Vite
+
+### Future Integrations
+
+- Grok API (Natural Language Understanding)
+- Vector Search
+- Plotly / Chart.js
+
+---
+
+# Running Locally
+
+Clone the repository.
+
+```bash
+git clone <repository-url>
+```
+
+Navigate into the backend.
+
+```bash
+cd backend
+```
+
+Create a virtual environment.
+
+```bash
+python -m venv venv
+```
+
+Activate the environment.
+
+```bash
+venv\Scripts\activate
+```
+
+Install dependencies.
+
+```bash
+pip install -r requirements.txt
+```
+
+Start the server.
+
+```bash
+uvicorn app:app --reload
+```
+
+The API will be available at:
+
+```
+http://127.0.0.1:8000
+```
+
+Swagger documentation:
+
+```
+http://127.0.0.1:8000/docs
 ```
 
 ---
 
-### Trend Queries
+# Engineering Principles
 
-```text
-Show monthly sales trends.
+DataSage is intentionally built using incremental milestones.
+
+Every feature follows the same workflow:
+
+```
+Requirements
+      │
+      ▼
+Behavior
+      │
+      ▼
+Architecture
+      │
+      ▼
+Implementation
+      │
+      ▼
+Testing
 ```
 
-```text
-How has revenue changed over time?
-```
-
----
-
-### Distribution Queries
-
-```text
-What are the most common customer segments?
-```
-
-```text
-Show the distribution of order statuses.
-```
-
----
-
-### Comparison Queries
-
-```text
-Compare revenue across regions.
-```
-
-```text
-Compare average order value by category.
-```
-
----
-
-# Current Architecture
-
-## Frontend
-
-* React
-* Vite
-
-## Backend
-
-* FastAPI
-* Pandas
-* Python
-
-## Core Components
-
-### Query Understanding
-
-Responsible for:
-
-* Intent detection
-* Operation detection
-* Group-by detection
-* Filter extraction
-* Semantic interpretation
-
----
-
-### Query Planning
-
-Responsible for:
-
-* Query plans
-* Resolution logic
-* Execution routing
-* Query metadata
-
----
-
-### Validation Layer
-
-Responsible for:
-
-* Query validation
-* Ambiguity detection
-* Confidence checks
-* Result verification
-
----
-
-### Execution Layer
-
-Responsible for:
-
-* KPI execution
-* Aggregation execution
-* Ranking execution
-* Trend execution
-* Distribution execution
-* Comparison execution
-* Raw data retrieval
-
----
-
-### Response Layer
-
-Responsible for:
-
-* Response formatting
-* Visualization selection
-* API response standardization
-
----
-
-# Current Project Status
-
-⚠️ Active Development
-
-The project is currently undergoing a major architectural refactor from a large monolithic backend into a modular analytics engine.
-
-Current focus areas include:
-
-* Improving query accuracy
-* Better schema understanding
-* Stronger query planning
-* Improved execution reliability
-* Better frontend-backend consistency
-* Modular architecture
-
----
-
-# Roadmap
-
-## Phase 1 – Analytics Foundation
-
-* Deterministic query execution
-* Query planning engine
-* Dataset intelligence layer
-* Validation framework
-
-## Phase 2 – Advanced Query Understanding
-
-* Better semantic matching
-* Multi-step query planning
-* Query repair
-* Ambiguity resolution
-* Improved schema awareness
-
-## Phase 3 – Analytics Platform
-
-* Multi-file analysis
-* Cross-dataset operations
-* Saved dashboards
-* User workspaces
-* Report generation
-
-## Phase 4 – AI-Assisted Analytics
-
-* Automated insight discovery
-* Root-cause analysis
-* Forecasting
-* Anomaly detection
-* Executive summaries
+No feature is added until the previous one is reliable.
 
 ---
 
 # Vision
 
-DataSage is being built around a simple idea:
+DataSage is not trying to become another conversational AI.
 
-**Data should be accessible through questions, not tools.**
+Its goal is to become a specialized analytics engine that combines:
 
-Today, extracting insights from data often requires familiarity with spreadsheets, dashboards, SQL, BI tools, or statistical software.
+- Natural language interaction
+- Deterministic computation
+- Dataset intelligence
+- Explainable reasoning
+- Modular software architecture
 
-DataSage aims to reduce that barrier by allowing users to interact with data conversationally while still benefiting from structured analytical execution.
+The focus is not on maximizing AI usage.
 
-The long-term goal is to create a system that combines:
+The focus is on building an analytics system that users can trust.
 
-* Natural language understanding
-* Dataset intelligence
-* Deterministic analytics
-* Explainable reasoning
-
-to make data exploration more accessible, reliable, and efficient.
-
-Rather than replacing analysts, DataSage is intended to amplify their productivity and reduce the friction involved in answering everyday business questions.
-
----
-
-# Repository Status
-
-This repository represents an active work-in-progress project.
-
-Expect:
-
-* Frequent architecture changes
-* Ongoing refactoring
-* Experimental features
-* Accuracy improvements
-* Breaking changes between versions
-
-Feedback, testing, and contributions are welcome.
 
 ---
 
