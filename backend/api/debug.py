@@ -4,6 +4,7 @@ from query.operation_parser import OperationParser
 from query.column_matcher import ColumnMatcher
 from storage.session_manager import SessionManager
 from query.intent_validator import IntentValidator
+from core.analytics_engine import AnalyticsEngine
 
 router = APIRouter(prefix="/debug", tags=["Debug"])
 
@@ -29,6 +30,17 @@ def parse_question(session_id: str, question: str):
         parsed["operation"],
         matched_columns
     )
+    
+    if validation.success:
+        
+        result = AnalyticsEngine.execute(
+            dataset,
+            parsed["operation"],
+            validation.column,
+        )
+    else:
+        
+        result = None
 
     return {
         "operation": parsed["operation"],
@@ -40,5 +52,6 @@ def parse_question(session_id: str, question: str):
             "selected_column": (
                 validation.column.name if validation.column else None
             )
-        }
+        },
+        "result": result
     }
