@@ -16,14 +16,24 @@ class IntentValidator:
 
         # Rule 1:
         # No matching columns
-
         if not matched_columns:
             return ValidationResult(
                 success=False,
                 error="No matching column found."
             )
 
+        column = matched_columns[0]
+
+        # Rule 2:
+        # Mean and Sum require numeric columns.
+        if operation in ("mean", "sum"):
+            if not column.is_numeric:
+                return ValidationResult(
+                    success=False,
+                    error=f"'{operation}' can only be applied to numeric columns."
+                )
+
         return ValidationResult(
             success=True,
-            column=matched_columns[0]
+            column=column
         )
