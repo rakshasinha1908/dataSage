@@ -1,5 +1,6 @@
 from models.dataset import Dataset
 from models.column_schema import ColumnSchema
+from models.operation import Operation
 
 
 class AnalyticsEngine:
@@ -27,22 +28,21 @@ class AnalyticsEngine:
     ):
 
         df = dataset.dataframe
-
         series = df[column.name]
 
-        if operation == "mean":
+        if operation == Operation.MEAN:
             return cls._to_python(series.mean())
 
-        if operation == "sum":
+        if operation == Operation.SUM:
             return cls._to_python(series.sum())
 
-        if operation == "count":
+        if operation == Operation.COUNT:
             return cls._to_python(series.count())
 
-        if operation == "min":
+        if operation == Operation.MIN:
             return cls._to_python(series.min())
 
-        if operation == "max":
+        if operation == Operation.MAX:
             return cls._to_python(series.max())
 
         raise ValueError(f"Unsupported operation: {operation}")
