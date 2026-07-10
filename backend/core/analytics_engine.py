@@ -28,6 +28,11 @@ class AnalyticsEngine:
     ):
 
         df = dataset.dataframe
+        for condition in plan.conditions:
+            if condition.operator == "==":
+                df = df[
+                    df[condition.column] == condition.value
+                ]
         series = df[plan.target_column.name]
 
         if plan.operation == Operation.MEAN:

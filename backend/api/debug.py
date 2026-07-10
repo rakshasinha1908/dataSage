@@ -42,6 +42,7 @@ def parse_question(session_id: str, question: str):
         plan = QueryPlan(
             operation=parsed["operation"],
             target_column=validation.column,
+            conditions=condition_result.conditions,
         )
     
         result = AnalyticsEngine.execute(
