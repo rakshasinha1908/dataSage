@@ -5,6 +5,7 @@ from query.operation_parser import OperationParser
 from query.column_matcher import ColumnMatcher
 from query.intent_validator import IntentValidator
 from core.analytics_engine import AnalyticsEngine
+from models.query_plan import QueryPlan
 
 router = APIRouter(prefix="/query", tags=["Query"])
 
@@ -37,11 +38,15 @@ def query_dataset(session_id: str, question: str):
             "success": False,
             "error": validation.error,
         }
-
+        
+    plan = QueryPlan(
+        operation=parsed["operation"],
+        target_column=validation.column,
+    )
+    
     result = AnalyticsEngine.execute(
         dataset,
-        parsed["operation"],
-        validation.column,
+        plan,
     )
 
     return {

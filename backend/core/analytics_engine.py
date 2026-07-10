@@ -1,6 +1,7 @@
 from models.dataset import Dataset
 from models.column_schema import ColumnSchema
 from models.operation import Operation
+from models.query_plan import QueryPlan
 
 
 class AnalyticsEngine:
@@ -23,26 +24,25 @@ class AnalyticsEngine:
     def execute(
         cls,
         dataset: Dataset,
-        operation: str,
-        column: ColumnSchema,
+        plan: QueryPlan,
     ):
 
         df = dataset.dataframe
-        series = df[column.name]
+        series = df[plan.target_column.name]
 
-        if operation == Operation.MEAN:
+        if plan.operation == Operation.MEAN:
             return cls._to_python(series.mean())
 
-        if operation == Operation.SUM:
+        if plan.operation == Operation.SUM:
             return cls._to_python(series.sum())
 
-        if operation == Operation.COUNT:
+        if plan.operation == Operation.COUNT:
             return cls._to_python(series.count())
 
-        if operation == Operation.MIN:
+        if plan.operation == Operation.MIN:
             return cls._to_python(series.min())
 
-        if operation == Operation.MAX:
+        if plan.operation == Operation.MAX:
             return cls._to_python(series.max())
 
-        raise ValueError(f"Unsupported operation: {operation}")
+        raise ValueError(f"Unsupported operation: {plan.operation}")
