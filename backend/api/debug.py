@@ -6,6 +6,7 @@ from storage.session_manager import SessionManager
 from query.intent_validator import IntentValidator
 from core.analytics_engine import AnalyticsEngine
 from models.query_plan import QueryPlan
+from query.condition_parser import ConditionParser
 
 router = APIRouter(prefix="/debug", tags=["Debug"])
 
@@ -21,9 +22,13 @@ def parse_question(session_id: str, question: str):
         )
 
     parsed = OperationParser.parse(question)
+    condition_result = ConditionParser.parse(
+        parsed["remaining_text"],
+        dataset.schema,
+    )
 
     matched_columns = ColumnMatcher.match(
-        parsed["remaining_text"],
+        condition_result.cleaned_text,
         dataset.schema,
     )
 
@@ -59,5 +64,14 @@ def parse_question(session_id: str, question: str):
                 validation.column.name if validation.column else None
             )
         },
+        "cleaned_text": condition_result.cleaned_text,
+        "conditions": [
+            {
+                "column": c.column,
+                "operator": c.operator,
+                "value": c.value,
+            }
+            for c in condition_result.conditions
+        ],
         "result": result
     }

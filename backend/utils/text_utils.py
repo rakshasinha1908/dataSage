@@ -17,3 +17,28 @@ def normalize_text(text: str) -> str:
     text = " ".join(text.split())
 
     return text
+
+CONNECTOR_WORDS = {
+    "in",
+    "of",
+    "with",
+    "using",
+    "where",
+    "for",
+}
+
+def remove_connector_words(text: str) -> str:
+    """
+    Removes common connector words that do not contribute
+    to identifying analytical columns.
+    """
+
+    words = text.split()
+
+    words = [
+        word
+        for word in words
+        if word not in CONNECTOR_WORDS
+    ]
+
+    return " ".join(words)

@@ -1,18 +1,15 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from models.column_schema import ColumnSchema
 from models.condition import Condition
 
 
 @dataclass
-class QueryPlan:
+class ConditionParseResult:
     """
-    Represents a structured analytical query.
+    Output produced by the ConditionParser.
     """
 
-    operation: str
-
-    target_column: ColumnSchema
+    cleaned_text: str
 
     conditions: List[Condition] = field(default_factory=list)
