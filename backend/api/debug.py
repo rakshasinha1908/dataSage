@@ -9,6 +9,7 @@ from models.query_plan import QueryPlan
 from query.condition_parser import ConditionParser
 from query.dimension_parser import DimensionParser
 from query.ranking_parser import RankingParser
+from core.visualization_selector import VisualizationSelector
 
 router = APIRouter(prefix="/debug", tags=["Debug"])
 
@@ -61,10 +62,15 @@ def parse_question(session_id: str, question: str):
             dataset,
             plan,
         )
+        visualization = VisualizationSelector.select(
+            plan,
+            result,
+        )
         
     else:
         
         result = None
+        visualization = None
 
     return {
         "operation": parsed["operation"],
@@ -96,6 +102,16 @@ def parse_question(session_id: str, question: str):
                 "limit": ranking_result.ranking.limit,
             }
             if ranking_result.ranking
+            else None
+        ),
+        "visualization": (
+            {
+                "chart_type": visualization.chart_type,
+                "x_axis": visualization.x_axis,
+                "y_axis": visualization.y_axis,
+                "title": visualization.title,
+                }
+            if visualization
             else None
         ),
         "result": result
