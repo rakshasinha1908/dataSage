@@ -8,6 +8,7 @@ from core.analytics_engine import AnalyticsEngine
 from models.query_plan import QueryPlan
 from query.condition_parser import ConditionParser
 from query.dimension_parser import DimensionParser
+from query.ranking_parser import RankingParser
 
 router = APIRouter(prefix="/debug", tags=["Debug"])
 
@@ -27,8 +28,12 @@ def parse_question(session_id: str, question: str):
         parsed["remaining_text"],
         dataset.schema,
     )
-    dimension_result = DimensionParser.parse(
+    ranking_result = RankingParser.parse(
         condition_result.cleaned_text,
+    )
+    
+    dimension_result = DimensionParser.parse(
+        ranking_result.cleaned_text,
         dataset.schema,
     )
 
@@ -49,6 +54,7 @@ def parse_question(session_id: str, question: str):
             target_column=validation.column,
             dimensions=dimension_result.dimensions,
             conditions=condition_result.conditions,
+            ranking=ranking_result.ranking,
         )
     
         result = AnalyticsEngine.execute(
@@ -84,5 +90,13 @@ def parse_question(session_id: str, question: str):
             d.column
             for d in dimension_result.dimensions
         ],
+        "ranking": (
+            {
+                "direction": ranking_result.ranking.direction,
+                "limit": ranking_result.ranking.limit,
+            }
+            if ranking_result.ranking
+            else None
+        ),
         "result": result
     }

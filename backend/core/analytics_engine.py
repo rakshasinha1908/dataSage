@@ -22,7 +22,9 @@ class AnalyticsEngine:
     def execute(cls, dataset: Dataset, plan: QueryPlan):
         df = dataset.dataframe
 
+        # -------------------------------
         # Apply conditions
+        # -------------------------------
         for condition in plan.conditions:
             if condition.operator == "==":
                 df = df[df[condition.column] == condition.value]
@@ -34,15 +36,29 @@ class AnalyticsEngine:
             grouped = df.groupby(plan.dimensions[0].column)[plan.target_column.name]
 
             if plan.operation == Operation.MEAN:
-                return grouped.mean().to_dict()
-            if plan.operation == Operation.SUM:
-                return grouped.sum().to_dict()
-            if plan.operation == Operation.COUNT:
-                return grouped.count().to_dict()
-            if plan.operation == Operation.MIN:
-                return grouped.min().to_dict()
-            if plan.operation == Operation.MAX:
-                return grouped.max().to_dict()
+                result = grouped.mean()
+            elif plan.operation == Operation.SUM:
+                result = grouped.sum()
+            elif plan.operation == Operation.COUNT:
+                result = grouped.count()
+            elif plan.operation == Operation.MIN:
+                result = grouped.min()
+            elif plan.operation == Operation.MAX:
+                result = grouped.max()
+            else:
+                raise ValueError(f"Unsupported operation: {plan.operation}")
+
+            # -------------------------------
+            # Ranking
+            # -------------------------------
+            if plan.ranking:
+                ascending = plan.ranking.direction == "asc"
+                result = result.sort_values(ascending=ascending)
+
+                if plan.ranking.limit is not None:
+                    result = result.head(plan.ranking.limit)
+
+            return result.to_dict()
 
         # -------------------------------
         # Ungrouped Analytics

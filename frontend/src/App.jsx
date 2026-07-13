@@ -1,47 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import axios from "axios";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   ResponsiveContainer, Area, AreaChart
 } from "recharts";
 
 // ═════════════════════════════════════════════════════════════════════════════
-// IMPROVEMENTS #26-33: DATA VALIDATION, SANITIZATION & SAFE RENDERING
+// SAFE CELL RENDERING (kept — used purely for display formatting, not backend)
 // ═════════════════════════════════════════════════════════════════════════════
 
-// Improvement #33: Runtime Diagnostics Logger
-class ResponseDiagnostics {
-  static log(label, data) {
-    if (process.env.NODE_ENV === "development") {
-      console.log(`[DataSage] ${label}`, data);
-    }
-  }
-  
-  static logCellType(colName, value) {
-    const type = typeof value;
-    if (type === "object" && value !== null) {
-      console.warn(`[DataSage] Cell type warning: ${colName} has type '${type}'`, value);
-    }
-  }
-  
-  static logResponseSchema(response) {
-    console.log("[DataSage] Response Schema:", {
-      status: response?.status,
-      type: response?.type,
-      hasTable: !!response?.table,
-      hasChart: !!response?.chart,
-      hasInsight: !!response?.insight,
-      tableRows: response?.table?.length || 0,
-      tableFirstRow: response?.table?.[0]
-    });
-  }
-  
-  static logValidationError(issue, response) {
-    console.warn(`[DataSage] Validation error: ${issue}`, response);
-  }
-}
-
-// Improvement #26, #29, #30: Safe Table Cell Rendering
+// Safe Table Cell Rendering
 class SafeCellRenderer {
   /**
    * Convert any cell value to a safely renderable string.
@@ -52,7 +19,7 @@ class SafeCellRenderer {
     if (value === null || value === undefined) {
       return "—";
     }
-    
+
     // Primitives (string, number, boolean) -> render as-is
     const primitiveType = typeof value;
     if (primitiveType === "string") {
@@ -64,7 +31,7 @@ class SafeCellRenderer {
     if (primitiveType === "boolean") {
       return value ? "true" : "false";
     }
-    
+
     // Objects/Arrays -> convert to JSON string with truncation
     if (primitiveType === "object") {
       try {
@@ -77,197 +44,9 @@ class SafeCellRenderer {
         return "[Object]";
       }
     }
-    
-    // Fallback for unexpected types (Improvement #30)
+
+    // Fallback for unexpected types
     return String(value);
-  }
-}
-
-// Improvement #28: Response Validators
-class ResponseValidator {
-  /**
-   * Validate table data structure before rendering.
-   */
-  static validateTableData(table) {
-    if (!table) return { valid: false, issue: "No table data" };
-    if (!Array.isArray(table)) return { valid: false, issue: "Table is not an array" };
-    if (table.length === 0) return { valid: false, issue: "Table is empty" };
-    
-    // Check first row structure
-    const firstRow = table[0];
-    if (typeof firstRow !== "object" || firstRow === null) {
-      return { valid: false, issue: "Table rows are not objects" };
-    }
-    
-    // Check all rows are objects
-    const allObjects = table.every(row => typeof row === "object" && row !== null);
-    if (!allObjects) {
-      return { valid: false, issue: "Not all rows are objects" };
-    }
-    
-    return { valid: true };
-  }
-  
-  /**
-   * Validate chart data structure.
-   */
-  static validateChartData(chart) {
-    if (!chart) return { valid: false, issue: "No chart data" };
-    if (!Array.isArray(chart.labels) || !Array.isArray(chart.values)) {
-      return { valid: false, issue: "Chart labels or values not arrays" };
-    }
-    if (chart.labels.length !== chart.values.length) {
-      return { valid: false, issue: "Chart labels/values length mismatch" };
-    }
-    if (chart.labels.length === 0) {
-      return { valid: false, issue: "Chart has no data points" };
-    }
-    
-    return { valid: true };
-  }
-  
-  /**
-   * Validate insight text field.
-   */
-  static validateInsightText(text) {
-    if (!text) return { valid: false, issue: "No insight text" };
-    if (typeof text !== "string") return { valid: false, issue: "Insight is not a string" };
-    return { valid: true };
-  }
-  
-  /**
-   * Full response structure validation (Improvement #28).
-   */
-  static validateFullResponse(response) {
-    const issues = [];
-    
-    // Check response is object
-    if (typeof response !== "object" || response === null) {
-      return { valid: false, issues: ["Response is not an object"] };
-    }
-    
-    // Check required fields
-    if (!response.type) issues.push("Missing response type");
-    if (!response.title && !response.message) issues.push("Missing title or message");
-    
-    // Check table data if present
-    if (response.table) {
-      const tableVal = this.validateTableData(response.table);
-      if (!tableVal.valid) issues.push(`Table: ${tableVal.issue}`);
-    }
-    
-    // Check chart data if present
-    if (response.chart) {
-      const chartVal = this.validateChartData(response.chart);
-      if (!chartVal.valid) issues.push(`Chart: ${chartVal.issue}`);
-    }
-    
-    // Check insight if present
-    if (response.insight) {
-      const insightVal = this.validateInsightText(response.insight);
-      if (!insightVal.valid) issues.push(`Insight: ${insightVal.issue}`);
-    }
-    
-    return {
-      valid: issues.length === 0,
-      issues
-    };
-  }
-}
-
-// Improvement #27, #32: Response Payload Sanitization
-class ResponseSanitizer {
-  /**
-   * Sanitize table row - convert all cell values to renderable strings.
-   * Prevents objects from reaching UI components.
-   */
-  static sanitizeTableRow(row) {
-    if (typeof row !== "object" || row === null) return row;
-    
-    const sanitized = {};
-    for (const [key, value] of Object.entries(row)) {
-      // Keep the original value structure but ensure renderability
-      sanitized[key] = value;
-    }
-    return sanitized;
-  }
-  
-  /**
-   * Sanitize entire table - ensure all cells are renderable.
-   * Converts nested objects/arrays to JSON strings.
-   */
-  static sanitizeTable(table) {
-    if (!Array.isArray(table)) return table;
-    
-    return table.map(row => {
-      if (typeof row !== "object" || row === null) return row;
-      
-      const sanitized = {};
-      for (const [key, value] of Object.entries(row)) {
-        // For complex types, store as-is - SafeCellRenderer will handle display
-        sanitized[key] = value;
-      }
-      return sanitized;
-    });
-  }
-  
-  /**
-   * Sanitize chart data.
-   */
-  static sanitizeChart(chart) {
-    if (!chart) return chart;
-    
-    return {
-      ...chart,
-      labels: Array.isArray(chart.labels) 
-        ? chart.labels.map(l => SafeCellRenderer.renderCell(l))
-        : chart.labels,
-      values: Array.isArray(chart.values)
-        ? chart.values.map(v => {
-            const num = Number(v);
-            return Number.isFinite(num) ? num : 0;
-          })
-        : chart.values,
-      type: chart.type || "bar",
-      x_label: chart.x_label || "Category",
-      y_label: chart.y_label || "Value"
-    };
-  }
-  
-  /**
-   * Full response sanitization (Improvement #32).
-   * Pass every API response through this before rendering.
-   */
-  static sanitizeResponse(response) {
-    if (!response || typeof response !== "object") {
-      return { type: "error", title: "Invalid response", error: "Response is not an object" };
-    }
-    
-    const sanitized = {
-      ...response,
-      title: typeof response.title === "string" ? response.title : "Result",
-      message: typeof response.message === "string" ? response.message : "",
-      insight: typeof response.insight === "string" ? response.insight : "",
-      type: response.type || "structured"
-    };
-    
-    // Sanitize table if present
-    if (response.table && Array.isArray(response.table)) {
-      sanitized.table = this.sanitizeTable(response.table);
-    }
-    
-    // Sanitize chart if present
-    if (response.chart && typeof response.chart === "object") {
-      sanitized.chart = this.sanitizeChart(response.chart);
-    }
-    
-    // Ensure value field for KPI responses is a number
-    if (sanitized.type === "kpi" && response.value !== undefined) {
-      const numVal = Number(response.value);
-      sanitized.value = Number.isFinite(numVal) ? numVal : 0;
-    }
-    
-    return sanitized;
   }
 }
 
@@ -715,35 +494,25 @@ const SparkleAvatar = () => (
 );
 
 // ─── Chart component ──────────────────────────────────────────────────────────
-// Improvement #28: Validate chart data before rendering
 function ChartBlock({ chart }) {
-  // Improvement #28: Validate chart structure
-  if (!chart) {
-    return null;
-  }
-  
-  const validation = ResponseValidator.validateChartData(chart);
-  if (!validation.valid) {
-    ResponseDiagnostics.logValidationError("ChartBlock validation failed", validation.issue);
+  if (!chart || !Array.isArray(chart.labels) || !Array.isArray(chart.values) ||
+      chart.labels.length === 0 || chart.labels.length !== chart.values.length) {
     return null;
   }
 
-  // Improvement #32: Sanitize chart data
-  const sanitized = ResponseSanitizer.sanitizeChart(chart);
-
-  const data = sanitized.labels.map((label, i) => ({
+  const data = chart.labels.map((label, i) => ({
     name: label,
-    value: sanitized.values?.[i] ?? 0
+    value: chart.values?.[i] ?? 0
   }));
 
   return (
     <div className="ds-chart-area">
       <div className="ds-chart-meta">
-        <div className="ds-chart-title">{sanitized?.y_label}</div>
-        <div className="ds-chart-sub">by {sanitized?.x_label}</div>
+        <div className="ds-chart-title">{chart?.y_label}</div>
+        <div className="ds-chart-sub">by {chart?.x_label}</div>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        {sanitized.type === "line" ? (
+        {chart.type === "line" ? (
           <AreaChart data={data}>
             <defs>
               <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
@@ -789,25 +558,23 @@ function InsightBlock({ text, label = "Key Insight" }) {
   );
 }
 
-// ─── Safe Response Renderer ────────────────────────────────────────────────────
-// Improvement #31: Data Contract - Component that enforces response schema safely
-// Improvement #30: Fallback Rendering for unsupported types
+// ─── Response Renderer ─────────────────────────────────────────────────────────
 function SafeResponseRenderer({ response }) {
   if (!response) {
     return <div className="ds-error-card">⚠ No response data available</div>;
   }
-  
+
   const isError = !!response.error;
   const isAI = response.type === "ai";
   const isStructured = response.type === "structured";
   const isKPI = response.type === "kpi";
-  
+
   // Error response
   if (isError) {
     return <div className="ds-error-card">⚠ {response.error}</div>;
   }
-  
-  // Fallback for unknown types (Improvement #30)
+
+  // Fallback for unknown types
   if (!isAI && !isStructured && !isKPI) {
     return (
       <div className="ds-response-card">
@@ -823,17 +590,17 @@ function SafeResponseRenderer({ response }) {
       </div>
     );
   }
-  
+
   return (
     <div className="ds-response-card">
       <div className="ds-response-body">
         <div className="ds-response-title">{response.title || "Result"}</div>
-        
+
         {/* AI Answer */}
         {isAI && response.insight && (
           <InsightBlock text={response.insight} label="Answer" />
         )}
-        
+
         {/* KPI Value */}
         {isKPI && (
           <>
@@ -854,7 +621,7 @@ function SafeResponseRenderer({ response }) {
             )}
           </>
         )}
-        
+
         {/* Structured (Table + Chart) */}
         {isStructured && (
           <>
@@ -865,7 +632,7 @@ function SafeResponseRenderer({ response }) {
           </>
         )}
       </div>
-      
+
       {/* Chart for structured responses */}
       {isStructured && response?.chart?.labels && response?.chart?.values && (
         <ChartBlock chart={response.chart} />
@@ -875,19 +642,11 @@ function SafeResponseRenderer({ response }) {
 }
 
 // ─── Data table ───────────────────────────────────────────────────────────────
-// Improvement #26: Safe table cell rendering with object-to-string conversion
 function DataTable({ rows }) {
-  // Improvement #28: Validate table data before rendering
   if (!rows?.length) return null;
-  
-  const validation = ResponseValidator.validateTableData(rows);
-  if (!validation.valid) {
-    ResponseDiagnostics.logValidationError("DataTable validation failed", validation.issue);
-    return null;
-  }
-  
+
   const headers = Object.keys(rows[0]);
-  
+
   return (
     <div className="ds-table-wrap">
       <table className="ds-table">
@@ -898,10 +657,7 @@ function DataTable({ rows }) {
           {rows.map((row, i) => (
             <tr key={i}>
               {headers.map(h => {
-                const cellValue = row[h];
-                // Improvement #26: Use SafeCellRenderer for all cell types
-                ResponseDiagnostics.logCellType(h, cellValue);
-                const displayValue = SafeCellRenderer.renderCell(cellValue);
+                const displayValue = SafeCellRenderer.renderCell(row[h]);
                 return <td key={h}>{displayValue}</td>;
               })}
             </tr>
@@ -912,9 +668,101 @@ function DataTable({ rows }) {
   );
 }
 
+// ─── Mock data helpers ─────────────────────────────────────────────────────────
+// Local mock dataset info used in place of a real upload/analysis backend.
+function buildMockUploadInfo(fileName) {
+  return {
+    name: fileName,
+    rows: 1284,
+    columns: ["Product", "Category", "Region", "Revenue", "Profit", "Date"],
+    suggestions: [
+      "Top 5 products by revenue",
+      "Show revenue trend",
+      "Distribution by category",
+      "What's the average profit margin?",
+    ],
+    summary: "This dataset contains sales transactions across products, regions, and time. It includes revenue, profit, and category fields suitable for trend and distribution analysis."
+  };
+}
+
+const MOCK_TABLE_ROWS = [
+  { Product: "Aurora Desk Lamp", Category: "Home", Region: "West", Revenue: 48210, Profit: 12500 },
+  { Product: "Comet Backpack", Category: "Outdoor", Region: "East", Revenue: 39875, Profit: 9800 },
+  { Product: "Nimbus Headphones", Category: "Electronics", Region: "North", Revenue: 35660, Profit: 11020 },
+  { Product: "Solstice Water Bottle", Category: "Outdoor", Region: "South", Revenue: 21230, Profit: 6100 },
+  { Product: "Lumen Desk Chair", Category: "Home", Region: "West", Revenue: 18590, Profit: 4200 },
+];
+
+const MOCK_TREND_CHART = {
+  type: "line",
+  x_label: "Month",
+  y_label: "Revenue",
+  labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+  values: [18200, 21430, 19870, 24310, 27650, 30120],
+};
+
+const MOCK_CATEGORY_CHART = {
+  type: "bar",
+  x_label: "Category",
+  y_label: "Revenue",
+  labels: ["Home", "Outdoor", "Electronics", "Apparel"],
+  values: [66800, 61105, 35660, 22940],
+};
+
+// Generates a plausible response locally, based on the phrasing of the query,
+// so the UI can be exercised without any backend.
+function generateMockResponse(query) {
+  const q = query.toLowerCase();
+
+  if (q.includes("explain") || q.includes("what") || q.includes("why")) {
+    return {
+      type: "ai",
+      title: "About this dataset",
+      insight: "The dataset spans six months of transactions across four product categories. Home and Outdoor categories drive the largest share of revenue, while Electronics carries the highest profit margin per unit."
+    };
+  }
+
+  if (q.includes("average") || q.includes("total") || q.includes("margin") || q.includes("count")) {
+    return {
+      type: "kpi",
+      title: "Average Profit Margin",
+      value: 27.4,
+      insight: "Profit margin has improved 3.1 points versus the prior period, led by the Electronics category."
+    };
+  }
+
+  if (q.includes("trend") || q.includes("over time")) {
+    return {
+      type: "structured",
+      title: "Revenue Trend",
+      insight: "Revenue has grown steadily each month, with the strongest gains in May and June.",
+      table: MOCK_TABLE_ROWS.slice(0, 3),
+      chart: MOCK_TREND_CHART
+    };
+  }
+
+  if (q.includes("distribution") || q.includes("category")) {
+    return {
+      type: "structured",
+      title: "Distribution by Category",
+      insight: "Home and Outdoor together account for over 60% of total revenue.",
+      table: MOCK_TABLE_ROWS,
+      chart: MOCK_CATEGORY_CHART
+    };
+  }
+
+  // Default: top rows style response
+  return {
+    type: "structured",
+    title: "Top Results",
+    insight: "Aurora Desk Lamp leads in both revenue and profit, followed closely by Comet Backpack.",
+    table: MOCK_TABLE_ROWS,
+    chart: MOCK_CATEGORY_CHART
+  };
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [sessionId, setSessionId]       = useState(null);
   const [uploadedInfo, setUploadedInfo] = useState(null);
   const [query, setQuery]               = useState("");
   const [chatHistory, setChatHistory]   = useState([]);
@@ -929,7 +777,7 @@ export default function App() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory, loading]);
 
-  // Suggestions come from the backend after upload
+  // Suggestions come from the mock dataset info after upload
   const suggestions = uploadedInfo?.suggestions ?? [
     "Top 5 by value",
     "Show trend",
@@ -944,40 +792,11 @@ export default function App() {
     "Compare revenue and profit",
   ];
 
-  // ── Upload ──────────────────────────────────────────────────────────────────
-  const handleUpload = async (f) => {
+  // ── Upload (mocked locally) ──────────────────────────────────────────────────
+  const handleUpload = (f) => {
     if (!f) return;
-    const formData = new FormData();
-    formData.append("file", f);
-    try {
-      const res = await axios.post("http://127.0.0.1:8000/api/upload", formData);
-      if (res.data.error) {
-        alert(`Upload error: ${res.data.error}`);
-        return;
-      }
-      
-      // Store session_id
-      setSessionId(res.data.session_id);
-      
-      setUploadedInfo({
-        name:        f.name,
-        rows:        res.data.rows,
-        columns:     res.data.columns,
-        suggestions: res.data.suggestions,
-        summary:     res.data.summary
-      });
-      setChatHistory([]);
-    } catch (err) {
-      // Dev fallback
-      setSessionId("dev-session");
-      setUploadedInfo({
-        name:        f.name,
-        rows:        "—",
-        columns:     [],
-        suggestions: null,
-        summary:     "Dataset ready for analysis"
-      });
-    }
+    setUploadedInfo(buildMockUploadInfo(f.name));
+    setChatHistory([]);
   };
 
   const onFileChange = (e) => {
@@ -993,71 +812,25 @@ export default function App() {
     if (f) handleUpload(f);
   }, []);
 
-  // ── Query ───────────────────────────────────────────────────────────────────
-  // Improvement #32: Add response payload sanitization layer
-  const handleQuery = async (customQuery) => {
+  // ── Query (mocked locally) ───────────────────────────────────────────────────
+  const handleQuery = (customQuery) => {
     const q = (customQuery ?? query).trim();
-    if (!q || loading || !sessionId) return;
+    if (!q || loading || !uploadedInfo) return;
     setQuery("");
     setLoading(true);
 
-    try {
-      // Send session_id with every query
-      const res = await axios.post("http://127.0.0.1:8000/api/query", {
-        session_id: sessionId,
-        query: q,
-        debug: process.env.NODE_ENV === "development" // Request debug info in dev
-      });
-      
-      // Improvement #28: Validate response structure before rendering
-      const validation = ResponseValidator.validateFullResponse(res.data);
-      if (!validation.valid) {
-        ResponseDiagnostics.logValidationError("Response validation failed", validation.issues);
-        ResponseDiagnostics.log("Response with issues:", res.data);
-      }
-      
-      // Improvement #33: Log response schema for diagnostics
-      ResponseDiagnostics.logResponseSchema(res.data);
-      
-      // Improvement #32: Sanitize response before adding to chat history
-      const sanitized = ResponseSanitizer.sanitizeResponse(res.data);
-      
-      ResponseDiagnostics.log("Response after sanitization:", sanitized);
-      
-      setChatHistory(prev => [...prev, { query: q, response: sanitized }]);
-    } catch (err) {
-      ResponseDiagnostics.log("Query error:", err);
-      setChatHistory(prev => [...prev, {
-        query: q,
-        response: {
-          type: "error",
-          title: "Error",
-          error: err.response?.data?.error || "Could not reach the server."
-        }
-      }]);
-    }
-
-    setLoading(false);
+    // Simulate a short thinking delay so the loading UI is still visible.
+    setTimeout(() => {
+      const response = generateMockResponse(q);
+      setChatHistory(prev => [...prev, { query: q, response }]);
+      setLoading(false);
+    }, 650);
   };
 
-  // ── Export ──────────────────────────────────────────────────────────────────
-  const handleExport = async () => {
-    try {
-      const res = await axios.post(
-        "http://127.0.0.1:8000/api/export",
-        { chatHistory },
-        { responseType: "blob" }
-      );
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "DataSage_Report.pdf");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.error("Export failed:", err);
-    }
+  // ── Export (stubbed — no backend available) ─────────────────────────────────
+  const handleExport = () => {
+    // No backend to generate a report from; kept as a no-op stub so the
+    // button remains present and functional-looking in the UI.
   };
 
   const hasUploaded = !!uploadedInfo;
@@ -1175,7 +948,7 @@ export default function App() {
                     <div className="ds-user-bubble">{chat.query}</div>
                   </div>
 
-                  {/* Bot response — Improvement #31: Use SafeResponseRenderer for data contract enforcement */}
+                  {/* Bot response */}
                   <div className="ds-msg">
                     <div className="ds-msg-header">
                       <SparkleAvatar />
@@ -1184,10 +957,9 @@ export default function App() {
                         <div className="ds-msg-sub">AI Analyst</div>
                       </div>
                     </div>
-                    
-                    {/* Improvement #31: All responses rendered through SafeResponseRenderer */}
+
                     <SafeResponseRenderer response={res} />
-                    
+
                     {/* Response content wrapper */}
                     {!res.error && (
                       <>
@@ -1278,4 +1050,3 @@ export default function App() {
     </div>
   );
 }
-
