@@ -47,6 +47,7 @@ def parse_question(session_id: str, question: str):
         plan = QueryPlan(
             operation=parsed["operation"],
             target_column=validation.column,
+            dimensions=dimension_result.dimensions,
             conditions=condition_result.conditions,
         )
     
