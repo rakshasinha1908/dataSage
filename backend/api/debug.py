@@ -7,6 +7,7 @@ from query.intent_validator import IntentValidator
 from core.analytics_engine import AnalyticsEngine
 from models.query_plan import QueryPlan
 from query.condition_parser import ConditionParser
+from query.dimension_parser import DimensionParser
 
 router = APIRouter(prefix="/debug", tags=["Debug"])
 
@@ -26,9 +27,13 @@ def parse_question(session_id: str, question: str):
         parsed["remaining_text"],
         dataset.schema,
     )
+    dimension_result = DimensionParser.parse(
+        condition_result.cleaned_text,
+        dataset.schema,
+    )
 
     matched_columns = ColumnMatcher.match(
-        condition_result.cleaned_text,
+        dimension_result.cleaned_text,
         dataset.schema,
     )
 
@@ -65,7 +70,7 @@ def parse_question(session_id: str, question: str):
                 validation.column.name if validation.column else None
             )
         },
-        "cleaned_text": condition_result.cleaned_text,
+        "cleaned_text": dimension_result.cleaned_text,
         "conditions": [
             {
                 "column": c.column,
@@ -73,6 +78,10 @@ def parse_question(session_id: str, question: str):
                 "value": c.value,
             }
             for c in condition_result.conditions
+        ],
+        "dimensions": [
+            d.column
+            for d in dimension_result.dimensions
         ],
         "result": result
     }
