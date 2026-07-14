@@ -1,11 +1,20 @@
 from fastapi import APIRouter, HTTPException
 
 from storage.session_manager import SessionManager
+
 from query.operation_parser import OperationParser
+from query.condition_parser import ConditionParser
+from query.ranking_parser import RankingParser
+from query.dimension_parser import DimensionParser
 from query.column_matcher import ColumnMatcher
 from query.intent_validator import IntentValidator
+
 from core.analytics_engine import AnalyticsEngine
+from core.visualization_selector import VisualizationSelector
+
 from models.query_plan import QueryPlan
+from models.response import Response
+
 
 router = APIRouter(prefix="/query", tags=["Query"])
 
@@ -18,15 +27,39 @@ def query_dataset(session_id: str, question: str):
     if dataset is None:
         raise HTTPException(
             status_code=404,
-            detail="Invalid session ID."
+            detail="Invalid session ID.",
         )
+
 
     parsed = OperationParser.parse(question)
 
-    matched_columns = ColumnMatcher.match(
+
+
+    condition_result = ConditionParser.parse(
         parsed["remaining_text"],
         dataset.schema,
     )
+
+
+    ranking_result = RankingParser.parse(
+        condition_result.cleaned_text,
+    )
+
+    
+
+    dimension_result = DimensionParser.parse(
+        ranking_result.cleaned_text,
+        dataset.schema,
+    )
+
+ 
+
+    matched_columns = ColumnMatcher.match(
+        dimension_result.cleaned_text,
+        dataset.schema,
+    )
+
+    
 
     validation = IntentValidator.validate(
         parsed["operation"],
@@ -34,23 +67,37 @@ def query_dataset(session_id: str, question: str):
     )
 
     if not validation.success:
-        return {
-            "success": False,
-            "error": validation.error,
-        }
-        
+        return Response(
+            success=False,
+            answer=None,
+            visualization=None,
+            error=validation.error,
+        )
+
+
     plan = QueryPlan(
         operation=parsed["operation"],
         target_column=validation.column,
+        dimensions=dimension_result.dimensions,
         conditions=condition_result.conditions,
+        ranking=ranking_result.ranking,
     )
-    
+
+
     result = AnalyticsEngine.execute(
         dataset,
         plan,
     )
 
-    return {
-        "success": True,
-        "result": result,
-    }
+
+    visualization = VisualizationSelector.select(
+        plan,
+        result,
+    )
+
+   
+    return Response(
+        success=True,
+        answer=result,
+        visualization=visualization,
+    )
