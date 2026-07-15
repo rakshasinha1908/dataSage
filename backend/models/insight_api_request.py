@@ -3,13 +3,11 @@ from typing import Any
 
 
 @dataclass
-class InsightRequest:
+class InsightAPIRequest:
     """
-    Internal request used by the AI layer.
+    Public request for generating AI insights.
     """
 
     question: str
-
-    analysis: str
 
     answer: Any
