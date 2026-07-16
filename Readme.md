@@ -2,6 +2,8 @@
 
 > **Ask questions in plain English. Get deterministic answers—not AI guesses.**
 
+> **"Python computes. AI explains."**
+
 DataSage is a deterministic analytics platform that combines natural language understanding with reliable data analysis.
 
 Users can upload structured datasets (CSV files) and interact with them using natural language, while every analytical computation is executed deterministically using Python—not by a large language model.
@@ -116,7 +118,19 @@ This keeps the codebase modular, maintainable, and easy to extend.
                      Structured API Response
                                │
                                ▼
-              (Optional) AI Insight Generation
+                     Query Context Storage
+                               │
+                               ▼
+                  Insight Request Builder
+                               │
+                               ▼
+                     Prompt Builder
+                               │
+                               ▼
+                      AI Insight Engine
+                               │
+                               ▼
+                      Gemini Provider
 ```
 
 ---
@@ -224,6 +238,50 @@ Future support:
 
 ---
 
+## AI Insight Engine
+
+Unlike traditional analytics assistants, DataSage does not use AI to perform calculations.
+
+Every analytical query is first executed deterministically using Python. AI is invoked only after a verified result has been produced, allowing it to explain, summarize, or interpret the result without modifying the underlying computation.
+
+Current capabilities include:
+
+- Explain deterministic analytical results
+- Answer follow-up questions using session context
+- Context-aware reasoning (e.g. "Why?")
+- Ground every explanation in verified analytical output
+- Refuse unsupported explanations when insufficient data is available
+
+---
+
+## Context-Aware AI
+
+DataSage remembers the most recent analytical query within a session.
+
+This enables natural follow-up questions without asking users to repeat the full analytical context.
+
+Example
+
+Average Transaction Amount by City
+
+↓
+
+Mumbai has the highest average transaction amount.
+
+↓
+
+User:
+
+Why?
+
+↓
+
+DataSage automatically understands that "Why?" refers to the previous analytical result and generates an explanation grounded in verified computations.
+
+Unlike traditional chatbots, DataSage does not retain conversations across sessions.
+
+---
+
 # Example Queries
 
 ```
@@ -306,9 +364,10 @@ Bangalore
 
 ## Backend
 
+- Python
 - FastAPI
 - Pandas
-- Python
+- Google Gemini API
 
 ---
 
@@ -319,22 +378,6 @@ Bangalore
 
 ---
 
-## Planned AI Layer
-
-The AI layer is intentionally designed as an optional reasoning component.
-
-Rather than answering every question, it will activate only for reasoning-heavy requests such as:
-
-- Why did sales decrease?
-- Explain this trend.
-- Compare these regions.
-- Summarize these results.
-- Recommend possible actions.
-
-This architecture keeps deterministic queries fast while minimizing inference costs.
-
----
-
 # Project Structure
 
 ```
@@ -342,6 +385,7 @@ backend/
 
 ├── api/
 ├── core/
+│   ├── ai/
 ├── models/
 ├── query/
 ├── storage/
@@ -421,23 +465,23 @@ http://127.0.0.1:8000/docs
 - Ranking
 - Visualization recommendation
 - Production query API
+- AI Insight Engine
+- Conversation-aware analytical reasoning
 
 ---
 
 ## In Progress
 
-- AI Insight Engine
-- Conversation-aware analytical reasoning
 - Frontend integration
 
 ---
 
 ## Planned
 
+- Multi-provider AI fallback
 - Interactive dashboards
 - Exportable reports
 - Additional visualization types
-- Multi-turn analytical conversations
 - Deployment
 
 ---
@@ -493,3 +537,9 @@ Every AI-generated insight should be grounded in verified analytical results—n
 **Raksha Sinha**
 
 Building DataSage to explore how deterministic analytics and selective AI reasoning can work together to create trustworthy data analysis systems.
+
+---
+
+## License
+
+This project is licensed under the MIT License.
