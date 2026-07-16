@@ -37,7 +37,7 @@ User Question
 
 ----------------------------------------
 
-Analysis Performed
+Deterministic Analysis
 
 {request.analysis}
 

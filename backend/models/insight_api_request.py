@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass
@@ -8,6 +7,6 @@ class InsightAPIRequest:
     Public request for generating AI insights.
     """
 
-    question: str
+    session_id: str
 
-    answer: Any
+    follow_up_question: str

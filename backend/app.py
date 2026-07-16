@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+
+load_dotenv()
 from fastapi import FastAPI
 from api.upload import router as upload_router
 from api.schema import router as schema_router

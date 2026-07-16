@@ -17,7 +17,6 @@ from models.response import Response
 
 from models.query_context import QueryContext
 
-from storage.session_manager import SessionManager
 
 
 router = APIRouter(prefix="/query", tags=["Query"])
@@ -75,6 +74,7 @@ def query_dataset(session_id: str, question: str):
             success=False,
             answer=None,
             visualization=None,
+            can_explain=False,
             error=validation.error,
         )
 
@@ -104,6 +104,7 @@ def query_dataset(session_id: str, question: str):
         success=True,
         answer=result,
         visualization=visualization,
+        can_explain=True,
     )
     
     query_context = QueryContext(
