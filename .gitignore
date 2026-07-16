@@ -29,3 +29,18 @@ __pycache__/
 *.pyo
 *.pyd
 .env
+
+# Python
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment
+.env.*
+!.env.example
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Build
+build/
