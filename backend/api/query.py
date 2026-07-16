@@ -15,6 +15,10 @@ from core.visualization_selector import VisualizationSelector
 from models.query_plan import QueryPlan
 from models.response import Response
 
+from models.query_context import QueryContext
+
+from storage.session_manager import SessionManager
+
 
 router = APIRouter(prefix="/query", tags=["Query"])
 
@@ -96,8 +100,21 @@ def query_dataset(session_id: str, question: str):
     )
 
    
-    return Response(
+    response = Response(
         success=True,
         answer=result,
         visualization=visualization,
     )
+    
+    query_context = QueryContext(
+        question=question,
+        query_plan=plan,
+        response=response,
+    )
+    
+    SessionManager.save_query_context(
+        session_id,
+        query_context,
+    )
+    
+    return response

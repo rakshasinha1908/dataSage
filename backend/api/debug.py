@@ -10,6 +10,7 @@ from query.condition_parser import ConditionParser
 from query.dimension_parser import DimensionParser
 from query.ranking_parser import RankingParser
 from core.visualization_selector import VisualizationSelector
+from storage.session_manager import SessionManager
 
 router = APIRouter(prefix="/debug", tags=["Debug"])
 
@@ -115,4 +116,38 @@ def parse_question(session_id: str, question: str):
             else None
         ),
         "result": result
+    }
+
+
+@router.get("/context")
+def get_query_context(session_id: str):
+
+    context = SessionManager.get_query_context(
+        session_id,
+    )
+
+    if context is None:
+        return {
+            "message": "No query context found."
+        }
+
+    return {
+        "question": context.question,
+        "analysis": {
+            "operation": context.query_plan.operation,
+            "target_column": context.query_plan.target_column.name,
+            "dimensions": [
+                d.column
+                for d in context.query_plan.dimensions
+            ],
+            "conditions": [
+                {
+                    "column": c.column,
+                    "operator": c.operator,
+                    "value": c.value,
+                }
+                for c in context.query_plan.conditions
+            ],
+        },
+        "answer": context.response.answer,
     }
