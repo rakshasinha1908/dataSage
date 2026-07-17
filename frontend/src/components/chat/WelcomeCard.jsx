@@ -62,16 +62,14 @@ export default function WelcomeCard({ uploadedInfo }) {
         </div>
 
         <div className="ds-welcome-sub">
-          Ask anything — I can show top/bottom rows,
-          averages, trends, distributions,
-          comparisons, or open-ended questions.
+          Start with a question. DataSage will understand your data, perform the analysis, and present the results clearly.
         </div>
 
         {uploadedInfo.summary && (
           <div className="ds-summary-card">
             <div className="ds-summary-label">
               <Icon.Sparkle />
-              Dataset Summary
+              Dataset Overview
             </div>
 
             <p>{uploadedInfo.summary}</p>

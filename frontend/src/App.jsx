@@ -1,10 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Landing from "./components/upload/Landing";
 import "./styles/globals.css";
+// import {
+//   buildMockUploadInfo,
+//   generateMockResponse,
+// } from "./services/mockApi";
 import {
-  buildMockUploadInfo,
   generateMockResponse,
 } from "./services/mockApi";
+
+import {
+  uploadDataset,
+} from "./services/api";
 import Navbar from "./components/layout/Navbar";
 import ChatView from "./components/chat/ChatView";
 import BottomBar from "./components/layout/BottomBar";
@@ -18,6 +25,7 @@ export default function App() {
   const [chatHistory, setChatHistory]   = useState([]);
   const [loading, setLoading]           = useState(false);
   const [dragOver, setDragOver]         = useState(false);
+  const [sessionId, setSessionId] = useState(null);
 
   const bottomRef = useRef(null);
   const fileRef   = useRef(null);
@@ -29,18 +37,41 @@ export default function App() {
 
   // Suggestions come from the mock dataset info after upload
   const suggestions = uploadedInfo?.suggestions ?? [
-    "Top 5 by value",
-    "Show trend",
-    "Distribution by category",
-    "Explain this dataset",
+    "Summarize this dataset.",
+  "What trends stand out in this data?",
+  "Find unusual patterns or anomalies.",
+  "What insights would an analyst notice first?",
   ];
 
   // ── Upload (mocked locally) ──────────────────────────────────────────────────
-  const handleUpload = (f) => {
-    if (!f) return;
-    setUploadedInfo(buildMockUploadInfo(f.name));
-    setChatHistory([]);
-  };
+  const handleUpload = async (file) => {
+  if (!file) return;
+
+  try {
+    const response = await uploadDataset(file);
+
+    setSessionId(response.session_id);
+
+setUploadedInfo({
+  name: response.filename,
+  rows: response.rows,
+  columns: response.columns,
+  summary: `${response.rows} rows • ${response.columns} columns`,
+});
+
+setHasUploaded(true);
+
+    // We'll wire this properly in the next step.
+  } catch (error) {
+    console.error(error);
+  }
+};
+  
+  // const handleUpload = (f) => {
+  //   if (!f) return;
+  //   setUploadedInfo(buildMockUploadInfo(f.name));
+  //   setChatHistory([]);
+  // };
 
   const onFileChange = (e) => {
     const f = e.target.files[0];

@@ -29,9 +29,6 @@ export default function UploadZone({
       onDragLeave={() => setDragOver(false)}
       onDrop={onDrop}
     >
-      <div className="ds-sparkle-icon">
-        <Icon.Sparkle />
-      </div>
 
       <div className="ds-drop-icon">
         <Icon.Upload />
