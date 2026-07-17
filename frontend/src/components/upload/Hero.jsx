@@ -9,10 +9,7 @@ export default function Hero() {
       </h1>
 
       <p className="ds-subtext">
-        Analyze your data using natural language.
-        Generate charts, summaries,
-        and insights instantly with our
-        AI-driven analytics suite.
+        No SQL. No formulas. Just conversation.
       </p>
     </>
   );

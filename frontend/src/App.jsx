@@ -6,9 +6,8 @@ import {
   generateMockResponse,
 } from "./services/mockApi";
 import Navbar from "./components/layout/Navbar";
-import Footer from "./components/layout/Footer";
 import ChatView from "./components/chat/ChatView";
-import ChatInput from "./components/chat/ChatInput";
+import BottomBar from "./components/layout/BottomBar";
 import { EXAMPLE_QUERIES } from "./components/upload/ExampleQueries";
 
 
@@ -122,20 +121,17 @@ export default function App() {
       </div>
 
       {/* Sticky input bar */}
-      <ChatInput
-        hasUploaded={hasUploaded}
-        chatHistory={chatHistory}
-        suggestions={suggestions}
-        onSuggestionClick={handleQuery}
-        onFileChange={onFileChange}
-        query={query}
-        setQuery={setQuery}
-        onSend={handleQuery}
-        loading={loading}
-      />
-
-      {/* Footer */}
-      <Footer />
+      <BottomBar
+  hasUploaded={hasUploaded}
+  chatHistory={chatHistory}
+  suggestions={suggestions}
+  onSuggestionClick={handleQuery}
+  onFileChange={onFileChange}
+  query={query}
+  setQuery={setQuery}
+  onSend={handleQuery}
+  loading={loading}
+/>
 
     </div>
   );

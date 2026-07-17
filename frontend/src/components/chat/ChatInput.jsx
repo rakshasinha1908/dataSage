@@ -56,8 +56,8 @@ export default function ChatInput({
           className="ds-input-field"
           placeholder={
             hasUploaded
-              ? "Ask something about your dataset…"
-              : "Upload a dataset first to start querying…"
+              ? "Ask anything about your data..."
+              : "Upload a dataset to begin the conversation..."
           }
           value={query}
           disabled={!hasUploaded}

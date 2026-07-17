@@ -1,8 +1,8 @@
 export const EXAMPLE_QUERIES = [
-  "Top 5 products by revenue",
-  "Show sales trends over time",
-  "Distribution by category",
-  "Compare revenue and profit",
+  "Summarize this dataset in plain English.",
+  "What trends stand out in this data?",
+  "Find unusual patterns or anomalies.",
+  "What insights would an analyst notice first?",
 ];
 
 export default function ExampleQueries({ queries }) {

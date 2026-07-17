@@ -7,10 +7,21 @@ export default function UploadZone({
   fileRef,
   onFileChange,
 }) {
+  const openPicker = () => fileRef.current?.click();
+
   return (
     <div
       className={`ds-dropzone${dragOver ? " active" : ""}`}
-      onClick={() => fileRef.current?.click()}
+      onClick={openPicker}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openPicker();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Upload dataset, CSV or XLSX"
       onDragOver={(e) => {
         e.preventDefault();
         setDragOver(true);
@@ -27,11 +38,15 @@ export default function UploadZone({
       </div>
 
       <div className="ds-drop-title">
-        Drop your dataset here
+        {dragOver ? "Drop it right here" : "Drop your dataset here"}
       </div>
 
       <div className="ds-drop-sub">
-        or browse <span>(CSV, XLSX supported)</span>
+        Start a conversation with your data.
+      </div>
+
+      <div className="ds-drop-browse">
+        or <span>browse files</span> · CSV, XLSX supported
       </div>
 
       <input
@@ -40,6 +55,7 @@ export default function UploadZone({
         accept=".csv,.xlsx,.xls"
         className="ds-hidden-input"
         onChange={onFileChange}
+        tabIndex={-1}
       />
     </div>
   );

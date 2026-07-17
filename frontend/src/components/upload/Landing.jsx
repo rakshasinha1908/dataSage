@@ -25,6 +25,6 @@ export default function Landing({
       <ExampleQueries
         queries={exampleQueries}
       />
-    </>
+    </> 
   );
 }

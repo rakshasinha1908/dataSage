@@ -20,16 +20,16 @@
   }
 
   .ds-root { min-height: 100vh; display: flex; flex-direction: column; background: #F5F4FF; }
-
+ 
   /* Navbar */
   .ds-nav {
     position: sticky; top: 0; z-index: 100;
-    height: 60px;
+    height: 52px;
     background: rgba(255,255,255,0.85);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--gray-200);
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 32px;
+    padding: 0 22px;
   }
   .ds-logo {
     font-size: 20px; font-weight: 700; letter-spacing: -0.5px;
@@ -70,20 +70,24 @@
     margin: 0 auto; padding: 0 24px;
   }
 
+
+
   /* Landing */
   .ds-landing {
     display: flex; flex-direction: column; align-items: center;
-    padding: 72px 0 200px;
+    padding: 28px 0 140px;
     animation: fadeUp 0.6s ease both;
   }
+
+  
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(24px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   .ds-headline {
-    font-size: clamp(28px, 5vw, 48px);
+    font-size: clamp(24px, 4vw, 38px);
     font-weight: 700; text-align: center;
-    line-height: 1.2; letter-spacing: -1.5px;
+    line-height: 1.2; letter-spacing: -1px;
     color: var(--gray-800); max-width: 600px;
   }
   .ds-headline-accent {
@@ -92,55 +96,87 @@
     background-clip: text;
   }
   .ds-subtext {
-    margin-top: 16px; font-size: 16px; color: var(--gray-500);
+    margin-top: 10px; font-size: 14.5px; color: var(--gray-500);
     text-align: center; max-width: 480px; line-height: 1.6;
   }
 
-  /* Drop zone */
+
   .ds-dropzone {
-    margin-top: 40px; width: 100%; max-width: 620px;
-    border: 2px dashed var(--gray-200); border-radius: 20px;
-    background: var(--white); padding: 56px 32px;
-    display: flex; flex-direction: column; align-items: center;
-    cursor: pointer; transition: all 0.25s;
-    position: relative; overflow: hidden;
-  }
-  .ds-dropzone::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(135deg,rgba(124,58,237,0.03),rgba(249,115,22,0.03));
-    opacity: 0; transition: opacity 0.25s;
-  }
-  .ds-dropzone:hover { border-color: var(--purple); box-shadow: var(--shadow-lg); }
-  .ds-dropzone:hover::before { opacity: 1; }
-  .ds-dropzone.active { border-color: var(--purple); background: var(--purple-light); }
-  .ds-drop-icon {
-    width: 60px; height: 60px; border-radius: 50%;
-    background: var(--gray-100);
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 18px; color: var(--purple); transition: all 0.25s;
-  }
-  .ds-dropzone:hover .ds-drop-icon { background: var(--purple-light); transform: scale(1.08); }
-  .ds-drop-title { font-size: 18px; font-weight: 600; color: var(--gray-800); }
-  .ds-drop-sub { font-size: 14px; color: var(--gray-400); margin-top: 6px; }
-  .ds-drop-sub span { color: var(--purple); font-weight: 500; }
-  .ds-hidden-input { display: none; }
-  .ds-sparkle-icon {
-    position: absolute; top: 16px; right: 16px;
-    width: 40px; height: 40px; background: var(--gray-100);
-    border-radius: 50%; display: flex; align-items: center;
-    justify-content: center; color: var(--gray-400);
-  }
+  margin-top: 24px; width: 100%; max-width: 520px;
+  border: 2px dashed var(--gray-200); border-radius: 20px;
+  background: var(--white); padding: 32px 32px;
+  display: flex; flex-direction: column; align-items: center;
+  cursor: pointer; transition: all 0.25s;
+  position: relative; overflow: hidden;
+}
+.ds-dropzone::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background: linear-gradient(135deg,rgba(124,58,237,0.03),rgba(249,115,22,0.03));
+  opacity: 0; transition: opacity 0.25s;
+}
+.ds-dropzone:hover { border-color: var(--purple); box-shadow: var(--shadow-lg); }
+.ds-dropzone:hover::before { opacity: 1; }
+.ds-dropzone:focus-visible {
+  outline: 2px solid var(--purple); outline-offset: 3px;
+  border-color: var(--purple);
+}
+.ds-dropzone.active {
+  border-color: var(--purple); background: var(--purple-light);
+  box-shadow: var(--shadow-lg);
+}
+.ds-dropzone.active .ds-drop-icon {
+  background: var(--white); transform: scale(1.1);
+}
+
+.ds-drop-icon {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--gray-100); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px; color: var(--purple); transition: all 0.25s;
+  position: relative; z-index: 1;
+}
+.ds-drop-icon svg { width: 20px; height: 20px; }
+.ds-dropzone:hover .ds-drop-icon { background: var(--purple-light); transform: scale(1.08); }
+
+.ds-drop-title {
+  font-size: 16px; font-weight: 600; color: var(--gray-800);
+  position: relative; z-index: 1; text-align: center;
+}
+.ds-drop-sub {
+  font-size: 12px; color: var(--gray-400); margin-top: 4px;
+  position: relative; z-index: 1; text-align: center;
+}
+
+.ds-drop-browse {
+  font-size: 13px; color: var(--gray-400); margin-top: 10px;
+  position: relative; z-index: 1; text-align: center;
+}
+.ds-drop-browse span {
+  color: var(--purple); font-weight: 500;
+}
+.ds-drop-browse span:hover { text-decoration: underline; }
+
+.ds-hidden-input { display: none; }
+
+.ds-sparkle-icon {
+  position: absolute; top: 16px; right: 16px; z-index: 1;
+  width: 40px; height: 40px; background: var(--gray-100);
+  border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; color: var(--gray-400);
+  transition: all 0.25s;
+}
+.ds-sparkle-icon svg { width: 18px; height: 18px; }
+.ds-dropzone:hover .ds-sparkle-icon {
+  background: var(--purple-light); color: var(--purple);
+}
   
   .ds-avatar-gradient {
   width: 36px;
   height: 36px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border-radius: 50%;
-
   background: linear-gradient(
     135deg,
     #F97316 0%,
@@ -182,14 +218,20 @@
 
   /* Examples */
   .ds-examples-label {
-    margin-top: 32px; font-size: 11px; font-weight: 600;
+    margin-top: 20px; font-size: 11px; font-weight: 600;
     letter-spacing: 2px; text-transform: uppercase; color: var(--gray-400);
   }
-  .ds-examples { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; justify-content: center; }
+  .ds-examples { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 8px; 
+    margin-top: 10px; 
+    justify-content: center; }
   .ds-example-chip {
-    padding: 8px 18px; border: 1px solid var(--gray-200);
+    padding: 7px 15px;
+    border: 1px solid var(--gray-200);
     border-radius: 999px; background: var(--white);
-    font-size: 13px; color: var(--gray-500);
+    font-size: 12.5px; color: var(--gray-500);
     cursor: default;
     transition: all 0.2s;
   }
@@ -290,21 +332,43 @@
   }
   .ds-chip:hover { border-color: var(--purple); color: var(--purple); background: var(--purple-light); }
 
-  /* Sticky input bar */
+   
   .ds-input-bar {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: blur(16px);
-    border-top: 1px solid var(--gray-200);
-    padding: 12px 24px 16px;
-    display: flex; flex-direction: column; align-items: center; gap: 10px;
-    z-index: 50;
-  }
+  padding: 10px 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  width: 100%;
+  max-width: 800px;
+  position: relative;
+  z-index: 1; /* sits above the fade, unaffected by it */
+}
+
+   
+
+.ds-bottom-bar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: min(1040px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 28px 28px 0 0;
+  padding: 20px 24px 6px;
+  z-index: 50;
+  background: linear-gradient(
+    to bottom,
+    rgba(245, 244, 255, 0) 0px,
+    rgba(245, 244, 255, 0.6) 20px,
+    #f5f4ff 36px,
+    #f5f4ff 100%
+  );
+}
   .ds-input-inner {
-    width: 100%; max-width: 812px;
+    width: 100%; max-width: 980px;
     display: flex; gap: 0;
     background: var(--white); border: 1.5px solid var(--gray-200);
-    border-radius: 14px; overflow: hidden;
+    border-radius: 16px; overflow: hidden;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
   .ds-input-inner:focus-within {
@@ -360,16 +424,28 @@
     40%           { transform: scale(1);   opacity: 1; }
   }
   .ds-loading-text { font-size: 14px; color: var(--gray-500); }
-
-  /* Footer */
+ 
   .ds-footer {
-    text-align: center; padding: 16px;
-    font-size: 11px; color: var(--gray-400); letter-spacing: 0.5px;
-    text-transform: uppercase;
-    border-top: 1px solid var(--gray-200); background: var(--white);
-  }
-  .ds-footer a { color: var(--gray-400); text-decoration: none; margin: 0 10px; }
-  .ds-footer a:hover { color: var(--purple); }
+    margin-top: 6px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+
+    font-size: 11px;
+    color: var(--gray-400);
+
+    border: none;
+    background: transparent;
+
+    padding: 0;
+}
+
+.ds-footer-version {
+    font-size: 10px;
+    opacity: .7;
+}
 
   /* Recharts tooltip */
   .custom-tooltip {
