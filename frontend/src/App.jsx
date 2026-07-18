@@ -1,16 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Landing from "./components/upload/Landing";
 import "./styles/globals.css";
-// import {
-//   buildMockUploadInfo,
-//   generateMockResponse,
-// } from "./services/mockApi";
 import {
   generateMockResponse,
 } from "./services/mockApi";
-
 import {
   uploadDataset,
+  queryDataset,
 } from "./services/api";
 import Navbar from "./components/layout/Navbar";
 import ChatView from "./components/chat/ChatView";
@@ -59,19 +55,12 @@ setUploadedInfo({
   summary: `${response.rows} rows • ${response.columns} columns`,
 });
 
-setHasUploaded(true);
-
-    // We'll wire this properly in the next step.
+    
   } catch (error) {
     console.error(error);
   }
 };
-  
-  // const handleUpload = (f) => {
-  //   if (!f) return;
-  //   setUploadedInfo(buildMockUploadInfo(f.name));
-  //   setChatHistory([]);
-  // };
+   
 
   const onFileChange = (e) => {
     const f = e.target.files[0];
@@ -87,19 +76,33 @@ setHasUploaded(true);
   }, []);
 
   // ── Query (mocked locally) ───────────────────────────────────────────────────
-  const handleQuery = (customQuery) => {
-    const q = (customQuery ?? query).trim();
-    if (!q || loading || !uploadedInfo) return;
-    setQuery("");
-    setLoading(true);
+  const handleQuery = async (customQuery) => {
+  const q = (customQuery ?? query).trim();
 
-    // Simulate a short thinking delay so the loading UI is still visible.
-    setTimeout(() => {
-      const response = generateMockResponse(q);
-      setChatHistory(prev => [...prev, { query: q, response }]);
-      setLoading(false);
-    }, 650);
-  };
+  if (!q || loading || !uploadedInfo || !sessionId) {
+    return;
+  }
+
+  setQuery("");
+  setLoading(true);
+
+  try {
+    const response = await queryDataset(sessionId, q);
+    console.log(response);
+
+    setChatHistory((prev) => [
+      ...prev,
+      {
+        query: q,
+        response,
+      },
+    ]);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ── Export (stubbed — no backend available) ─────────────────────────────────
   const handleExport = () => {

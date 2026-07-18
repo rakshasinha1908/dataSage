@@ -14,9 +14,8 @@ from core.visualization_selector import VisualizationSelector
 
 from models.query_plan import QueryPlan
 from models.response import Response
-
+from core.response_builder import ResponseBuilder
 from models.query_context import QueryContext
-
 
 
 router = APIRouter(prefix="/query", tags=["Query"])
@@ -33,41 +32,39 @@ def query_dataset(session_id: str, question: str):
             detail="Invalid session ID.",
         )
 
-
     parsed = OperationParser.parse(question)
-
-
 
     condition_result = ConditionParser.parse(
         parsed["remaining_text"],
         dataset.schema,
     )
 
-
     ranking_result = RankingParser.parse(
         condition_result.cleaned_text,
     )
-
-    
 
     dimension_result = DimensionParser.parse(
         ranking_result.cleaned_text,
         dataset.schema,
     )
 
- 
-
     matched_columns = ColumnMatcher.match(
         dimension_result.cleaned_text,
         dataset.schema,
     )
 
-    
-
     validation = IntentValidator.validate(
         parsed["operation"],
         matched_columns,
     )
+
+    print("\n" + "=" * 60)
+    print("Question:", question)
+    print("Parsed Operation:", parsed["operation"])
+    print("Matched Columns:", [c.name for c in matched_columns])
+    print("Validation Success:", validation.success)
+    print("Validation Error:", validation.error)
+    print("=" * 60 + "\n")
 
     if not validation.success:
         return Response(
@@ -78,7 +75,6 @@ def query_dataset(session_id: str, question: str):
             error=validation.error,
         )
 
-
     plan = QueryPlan(
         operation=parsed["operation"],
         target_column=validation.column,
@@ -87,35 +83,31 @@ def query_dataset(session_id: str, question: str):
         ranking=ranking_result.ranking,
     )
 
-
     result = AnalyticsEngine.execute(
         dataset,
         plan,
     )
-
 
     visualization = VisualizationSelector.select(
         plan,
         result,
     )
 
-   
-    response = Response(
-        success=True,
-        answer=result,
-        visualization=visualization,
-        can_explain=True,
+    response = ResponseBuilder.build(
+        plan,
+        result,
+        visualization,
     )
-    
+
     query_context = QueryContext(
         question=question,
         query_plan=plan,
         response=response,
     )
-    
+
     SessionManager.save_query_context(
         session_id,
         query_context,
     )
-    
+
     return response
