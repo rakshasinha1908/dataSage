@@ -7,7 +7,10 @@ from utils.text_utils import normalize_text
 
 class RankingParser:
     """
-    Extracts ranking instructions from the user's question.
+    Extracts only the ranking limit from the remaining query text.
+
+    OperationParser is responsible for determining whether the
+    operation is HEAD or TAIL.
     """
 
     @classmethod
@@ -17,43 +20,21 @@ class RankingParser:
 
         ranking = None
 
-        # -------------------------------
-        # Top N
-        # -------------------------------
-
-        match = re.search(r"top\s+(\d+)", cleaned_text)
+        # Find the first integer anywhere in the text
+        match = re.search(r"\b(\d+)\b", cleaned_text)
 
         if match:
 
             ranking = Ranking(
-                direction="desc",
+                direction=None,
                 limit=int(match.group(1)),
             )
 
             cleaned_text = cleaned_text.replace(
-                match.group(0),
+                match.group(1),
                 "",
+                1,
             )
-
-        # -------------------------------
-        # Bottom N
-        # -------------------------------
-
-        else:
-
-            match = re.search(r"bottom\s+(\d+)", cleaned_text)
-
-            if match:
-
-                ranking = Ranking(
-                    direction="asc",
-                    limit=int(match.group(1)),
-                )
-
-                cleaned_text = cleaned_text.replace(
-                    match.group(0),
-                    "",
-                )
 
         cleaned_text = " ".join(cleaned_text.split())
 

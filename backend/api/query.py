@@ -16,6 +16,7 @@ from models.query_plan import QueryPlan
 from models.response import Response
 from core.response_builder import ResponseBuilder
 from models.query_context import QueryContext
+from query.query_normalizer import QueryNormalizer
 
 
 router = APIRouter(prefix="/query", tags=["Query"])
@@ -32,7 +33,8 @@ def query_dataset(session_id: str, question: str):
             detail="Invalid session ID.",
         )
 
-    parsed = OperationParser.parse(question)
+    normalized_question = QueryNormalizer.normalize(question)
+    parsed = OperationParser.parse(normalized_question)
 
     condition_result = ConditionParser.parse(
         parsed["remaining_text"],
@@ -47,6 +49,13 @@ def query_dataset(session_id: str, question: str):
         ranking_result.cleaned_text,
         dataset.schema,
     )
+    
+    print("=" * 50)
+    print("Remaining text after OperationParser:", parsed["remaining_text"])
+    print("After ConditionParser:", condition_result.cleaned_text)
+    print("After RankingParser:", ranking_result.cleaned_text)
+    print("After DimensionParser:", dimension_result.cleaned_text)
+    print("=" * 50)
 
     matched_columns = ColumnMatcher.match(
         dimension_result.cleaned_text,
@@ -74,6 +83,10 @@ def query_dataset(session_id: str, question: str):
             can_explain=False,
             error=validation.error,
         )
+    
+    print("\nRanking:", ranking_result.ranking)
+    if ranking_result.ranking:
+        print("Limit:", ranking_result.ranking.limit)
 
     plan = QueryPlan(
         operation=parsed["operation"],

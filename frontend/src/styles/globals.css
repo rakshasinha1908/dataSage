@@ -334,7 +334,7 @@
   padding: 10px 24px;
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   width: 100%;
-  max-width: 800px;
+  max-width: 860px;
   position: relative;
   z-index: 1; /* sits above the fade, unaffected by it */
 }
