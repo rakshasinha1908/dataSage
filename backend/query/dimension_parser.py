@@ -1,5 +1,6 @@
 from models.dimension import Dimension
 from models.dimension_parse_result import DimensionParseResult
+from query.column_matcher import ColumnMatcher
 from utils.text_utils import (
     normalize_text,
     remove_connector_words,
@@ -40,20 +41,26 @@ class DimensionParser:
 
             candidate = words[index + 1]
 
-            for column in schema:
+            matched_columns = ColumnMatcher.match(
+                candidate,
+                schema,
+            )
 
-                if normalize_text(column.name) == candidate:
+            if not matched_columns:
+                continue
 
-                    dimensions.append(
-                        Dimension(
-                            column=column.name,
-                        )
-                    )
+            column = matched_columns[0]
 
-                    cleaned_text = cleaned_text.replace(
-                        f"{word} {candidate}",
-                        "",
-                    )
+            dimensions.append(
+                Dimension(
+                    column=column.name,
+                )
+            )
+
+            cleaned_text = cleaned_text.replace(
+                f"{word} {candidate}",
+                "",
+            )
 
         cleaned_text = " ".join(cleaned_text.split())
         cleaned_text = remove_connector_words(cleaned_text)

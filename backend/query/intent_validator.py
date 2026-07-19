@@ -25,9 +25,10 @@ class IntentValidator:
     DATASET_OPERATIONS = {
         Operation.HEAD,
         Operation.TAIL,
-        Operation.COUNT,      # count rows
-        "columns",
-        "describe",
+        Operation.COUNT,          # count rows
+        Operation.DESCRIBE,
+        Operation.COLUMNS,
+        Operation.SHOW_ROWS,
     }
 
     @classmethod
@@ -42,7 +43,7 @@ class IntentValidator:
         # -------------------------------
         if operation in cls.DATASET_OPERATIONS:
 
-            # COUNT can also work on a column
+            # COUNT can optionally work on a column
             if (
                 operation == Operation.COUNT
                 and matched_columns

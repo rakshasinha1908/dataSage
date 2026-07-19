@@ -8,6 +8,8 @@ class AnalyticsEngine:
     Executes deterministic analytical operations.
     """
 
+    DEFAULT_PREVIEW_ROWS = 25
+
     @staticmethod
     def _to_python(value):
         """
@@ -34,23 +36,56 @@ class AnalyticsEngine:
         if plan.operation == Operation.HEAD:
             limit = (
                 plan.ranking.limit
-                if plan.ranking and plan.ranking.limit
+                if plan.ranking.limit is not None
                 else 5
             )
+
             return df.head(limit).to_dict(orient="records")
 
         if plan.operation == Operation.TAIL:
             limit = (
                 plan.ranking.limit
-                if plan.ranking and plan.ranking.limit
+                if plan.ranking.limit is not None
                 else 5
             )
+
             return df.tail(limit).to_dict(orient="records")
+
+        # -------------------------------
+        # Row Retrieval
+        # -------------------------------
+        if plan.operation == Operation.SHOW_ROWS:
+
+            total_matching_rows = len(df)
+
+            if plan.ranking.show_all:
+                preview_limit = total_matching_rows
+
+            elif plan.ranking.is_explicit:
+                preview_limit = min(
+                    plan.ranking.limit,
+                    total_matching_rows,
+                )
+
+            else:
+                preview_limit = min(
+                    cls.DEFAULT_PREVIEW_ROWS,
+                    total_matching_rows,
+                )
+
+            preview = df.head(preview_limit)
+
+            return {
+                "rows": preview.to_dict(orient="records"),
+                "returned_rows": len(preview),
+                "total_matching_rows": total_matching_rows,
+                "truncated": preview_limit < total_matching_rows,
+            }
 
         # -------------------------------
         # Metadata
         # -------------------------------
-        if plan.operation == "columns":
+        if plan.operation == Operation.COLUMNS:
             return [
                 {
                     "name": column.name,
@@ -63,7 +98,7 @@ class AnalyticsEngine:
                 for column in dataset.schema
             ]
 
-        if plan.operation == "describe":
+        if plan.operation == Operation.DESCRIBE:
             return {
                 "rows": len(df),
                 "columns": len(df.columns),
@@ -114,12 +149,19 @@ class AnalyticsEngine:
             # -------------------------------
             # Ranking
             # -------------------------------
-            if plan.ranking:
+            if plan.ranking.direction is not None:
                 ascending = plan.ranking.direction == "asc"
-                result = result.sort_values(ascending=ascending)
+                result = result.sort_values(
+                    ascending=ascending
+                )
 
-                if plan.ranking.limit is not None:
-                    result = result.head(plan.ranking.limit)
+            if (
+                plan.ranking.is_explicit
+                and plan.ranking.limit is not None
+            ):
+                result = result.head(
+                    plan.ranking.limit
+                )
 
             return result.to_dict()
 
@@ -130,13 +172,19 @@ class AnalyticsEngine:
 
         if plan.operation == Operation.MEAN:
             return cls._to_python(series.mean())
+
         if plan.operation == Operation.SUM:
             return cls._to_python(series.sum())
+
         if plan.operation == Operation.COUNT:
             return cls._to_python(series.count())
+
         if plan.operation == Operation.MIN:
             return cls._to_python(series.min())
+
         if plan.operation == Operation.MAX:
             return cls._to_python(series.max())
 
-        raise ValueError(f"Unsupported operation: {plan.operation}")
+        raise ValueError(
+            f"Unsupported operation: {plan.operation}"
+        )

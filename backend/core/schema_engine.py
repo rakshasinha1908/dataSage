@@ -29,6 +29,12 @@ class SchemaEngine:
                     for value in series.dropna().unique().tolist()[:5]
                 ]
             )
+            
+            print(
+                column_schema.name,
+                column_schema.dtype,
+                column_schema.sample_values,
+            )
 
             schema.append(column_schema)
 

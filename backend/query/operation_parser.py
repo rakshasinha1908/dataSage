@@ -8,6 +8,7 @@ class OperationParser:
     Assumes the question has already been normalized by QueryNormalizer.
     """
 
+    
     OPERATIONS = {
         # Statistical Operations (Canonical only)
         "average": Operation.MEAN,
@@ -17,27 +18,44 @@ class OperationParser:
         "minimum": Operation.MIN,
 
         # Dataset Overview
-        "describe": "describe",
-        "summary": "describe",
+        "describe": Operation.DESCRIBE,
+        "summary": Operation.DESCRIBE,
 
         # Metadata
-        "columns": "columns",
-        "schema": "columns",
+        "columns": Operation.COLUMNS,
+        "schema": Operation.COLUMNS,
     }
 
     @classmethod
     def parse(cls, question: str) -> dict:
+        
+        print("\n" + "=" * 60)
+        print("🔥 OPERATION PARSER IS RUNNING")
+        print("INPUT:", repr(question))
+        print("=" * 60)
 
-        normalized_question = question.lower()
+        normalized_question = question.lower().strip()
 
-        # -------------------------------
-        # Dataset Preview
-        # -------------------------------
-        if "top" in normalized_question and "row" in normalized_question:
+        # ----------------------------------------
+        # Dataset Preview (Top / Bottom)
+        # ----------------------------------------
+
+        if "top" in normalized_question and (
+            "row" in normalized_question
+            or "rows" in normalized_question
+            or "record" in normalized_question
+            or "records" in normalized_question
+        ):
 
             remaining_text = normalized_question
 
-            for word in ("top", "rows", "row"):
+            for word in (
+                "top",
+                "rows",
+                "row",
+                "records",
+                "record",
+            ):
                 remaining_text = remaining_text.replace(word, "", 1)
 
             remaining_text = " ".join(remaining_text.split())
@@ -47,11 +65,22 @@ class OperationParser:
                 "remaining_text": remaining_text,
             }
 
-        if "bottom" in normalized_question and "row" in normalized_question:
+        if "bottom" in normalized_question and (
+            "row" in normalized_question
+            or "rows" in normalized_question
+            or "record" in normalized_question
+            or "records" in normalized_question
+        ):
 
             remaining_text = normalized_question
 
-            for word in ("bottom", "rows", "row"):
+            for word in (
+                "bottom",
+                "rows",
+                "row",
+                "records",
+                "record",
+            ):
                 remaining_text = remaining_text.replace(word, "", 1)
 
             remaining_text = " ".join(remaining_text.split())
@@ -61,9 +90,57 @@ class OperationParser:
                 "remaining_text": remaining_text,
             }
 
-        # -------------------------------
+        # ----------------------------------------
+        # Row Retrieval
+        # ----------------------------------------
+
+        words = normalized_question.split()
+
+        retrieval_verbs = {
+            "show",
+            "display",
+            "list",
+        }
+
+        row_words = {
+            "row",
+            "rows",
+            "record",
+            "records",
+            "data",
+        }
+
+        if (
+            any(word in retrieval_verbs for word in words)
+            and any(word in row_words for word in words)
+        ):
+
+            remaining_text = normalized_question
+
+            # Remove verb
+            for phrase in (
+                "show me",
+                "show",
+                "display",
+                "list",
+            ):
+                remaining_text = remaining_text.replace(
+                    phrase,
+                    "",
+                    1,
+                )
+
+            remaining_text = " ".join(remaining_text.split())
+
+            return {
+                "operation": Operation.SHOW_ROWS,
+                "remaining_text": remaining_text,
+            }
+
+        # ----------------------------------------
         # Statistical / Metadata Operations
-        # -------------------------------
+        # ----------------------------------------
+
         words = normalized_question.split()
 
         for keyword, operation in cls.OPERATIONS.items():

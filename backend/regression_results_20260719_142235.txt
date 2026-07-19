@@ -1,0 +1,77 @@
+================================================================================
+DataSage V2 Regression Report
+Generated : 19-07-2026 14:22:35
+Session ID: 35549f47-fde1-41ee-9388-78c102d67ed8
+================================================================================
+
+✅ PASS | describe dataset
+✅ PASS | dataset summary
+✅ PASS | show columns
+✅ PASS | show schema
+✅ PASS | show rows
+✅ PASS | show me rows
+✅ PASS | display rows
+✅ PASS | list rows
+✅ PASS | show 10 rows
+✅ PASS | show 25 rows
+✅ PASS | show 50 rows
+✅ PASS | show 100 rows
+✅ PASS | show 500 rows
+✅ PASS | show all rows
+✅ PASS | show every row
+✅ PASS | show all records
+✅ PASS | top 10 rows
+✅ PASS | bottom 10 rows
+✅ PASS | first 15 rows
+✅ PASS | last 20 rows
+✅ PASS | top 10 rows where city is delhi
+✅ PASS | bottom 10 rows where city is delhi
+✅ PASS | show rows where city is delhi
+✅ PASS | show rows where prepaid order is yes
+✅ PASS | show rows where membership customer is yes
+✅ PASS | show 10 rows where city is delhi
+✅ PASS | show all rows where city is delhi
+✅ PASS | average transaction amount
+✅ PASS | sum transaction amount
+✅ PASS | maximum transaction amount
+✅ PASS | minimum transaction amount
+✅ PASS | count customers
+✅ PASS | average transaction amount by category
+✅ PASS | average transaction amount by city
+✅ PASS | sum transaction amount by category
+✅ PASS | count customers by city
+✅ PASS | average transaction amount where city is delhi
+✅ PASS | count customers where prepaid order is yes
+❌ FAIL | sum transaction amount where membership customer is yes
+❌ FAIL | top 5 categories by transaction amount
+❌ FAIL | bottom 10 cities by transaction amount
+✅ PASS | show 0 rows
+✅ PASS | show 99999 rows
+❌ FAIL | average comments
+❌ FAIL | sum customer full name
+
+================================================================================
+SUMMARY
+================================================================================
+Passed : 40
+Failed : 5
+Success Rate : 88.89%
+================================================================================
+
+FAILED QUERIES
+--------------------------------------------------------------------------------
+• sum transaction amount where membership customer is yes
+  Reason : No matching column found.
+
+• top 5 categories by transaction amount
+  Reason : No matching column found.
+
+• bottom 10 cities by transaction amount
+  Reason : No matching column found.
+
+• average comments
+  Reason : 'mean' can only be applied to numeric columns.
+
+• sum customer full name
+  Reason : 'sum' can only be applied to numeric columns.
+

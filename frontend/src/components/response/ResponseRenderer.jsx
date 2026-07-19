@@ -51,7 +51,7 @@ export default function ResponseRenderer({ response }) {
               fontFamily: "'DM Mono', monospace",
             }}
           >
-            {response.message ||
+            {response.message ??
               JSON.stringify(response).substring(0, 200)}
           </div>
         </div>
@@ -106,6 +106,39 @@ export default function ResponseRenderer({ response }) {
                 text={response.insight}
                 label="Key Insight"
               />
+            )}
+
+            {response.metadata && (
+              <div
+                style={{
+                  marginTop: "12px",
+                  marginBottom: "16px",
+                  fontSize: "13px",
+                  color: "#6B7280",
+                }}
+              >
+                {response.metadata.truncated ? (
+                  <>
+                    Showing{" "}
+                    <strong>
+                      {response.metadata.returned_rows}
+                    </strong>{" "}
+                    of{" "}
+                    <strong>
+                      {response.metadata.total_matching_rows}
+                    </strong>{" "}
+                    matching rows
+                  </>
+                ) : (
+                  <>
+                    Showing all{" "}
+                    <strong>
+                      {response.metadata.returned_rows}
+                    </strong>{" "}
+                    matching rows
+                  </>
+                )}
+              </div>
             )}
 
             <DataTable rows={response.table} />
