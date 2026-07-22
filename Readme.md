@@ -5,7 +5,7 @@
 > **Python computes. AI explains.**
 
 <p align="center">
-  <img src="docs/images/upload-ui.png" alt="DataSage Upload UI" width="900"/>
+  <img src="docs/images/upload.png" alt="DataSage Upload UI" width="900"/>
 </p>
 
 DataSage is an AI-assisted analytics platform that combines natural language understanding with deterministic data analysis.
