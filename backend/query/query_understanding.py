@@ -7,6 +7,10 @@ from query.condition_parser import ConditionParser
 from query.ranking_parser import RankingParser
 from query.dimension_parser import DimensionParser
 from query.column_matcher import ColumnMatcher
+from query.ranking_analytics_parser import RankingAnalyticsParser
+
+from models.dimension import Dimension
+from models.operation import Operation
 
 
 class QueryUnderstanding:
@@ -22,12 +26,6 @@ class QueryUnderstanding:
     - Extract grouping dimensions
     - Match user references to dataset columns
     - Construct and return a QueryPlan
-
-    This class does NOT:
-    - Execute analytics
-    - Validate business logic
-    - Generate responses
-    - Know anything about FastAPI
     """
 
     @classmethod
@@ -50,32 +48,64 @@ class QueryUnderstanding:
             condition_result.cleaned_text,
         )
 
-        dimension_result = DimensionParser.parse(
-            ranking_result.cleaned_text,
-            schema,
-        )
+        operation = parsed["operation"]
 
-        print("=" * 60)
-        print("Remaining text after OperationParser :", parsed["remaining_text"])
-        print("After ConditionParser               :", condition_result.cleaned_text)
-        print("After RankingParser                 :", ranking_result.cleaned_text)
-        print("After DimensionParser               :", dimension_result.cleaned_text)
-        print("Dimensions                          :", [d.column for d in dimension_result.dimensions])
-        print("=" * 60)
+        # --------------------------------------------------
+        # Ranking queries
+        # --------------------------------------------------
+        if ranking_result.ranking is not None:
 
-        print("\nCalling ColumnMatcher...\n")
+            analytics_result = RankingAnalyticsParser.parse(
+                ranking_result.cleaned_text,
+            )
 
-        matched_columns = ColumnMatcher.match(
-            dimension_result.cleaned_text,
-            schema,
-        )
+            group_columns = ColumnMatcher.match(
+                analytics_result.group_phrase,
+                schema,
+            )
 
-        print("\nReturned from ColumnMatcher.\n")
+            measure_columns = ColumnMatcher.match(
+                analytics_result.measure_phrase,
+                schema,
+            )
+
+            dimensions = []
+
+            if group_columns:
+                dimensions.append(
+                    Dimension(
+                        column=group_columns[0].name
+                    )
+                )
+
+            if (
+                operation is None
+                and measure_columns
+                and measure_columns[0].is_numeric
+            ):
+                operation = Operation.SUM
+
+        # --------------------------------------------------
+        # Normal analytical queries
+        # --------------------------------------------------
+        else:
+
+            dimension_result = DimensionParser.parse(
+                ranking_result.cleaned_text,
+                schema,
+            )
+
+            measure_columns = ColumnMatcher.match(
+                dimension_result.cleaned_text,
+                schema,
+            )
+
+            dimensions = dimension_result.dimensions
 
         return QueryPlan(
-            operation=parsed["operation"],
-            target_column=matched_columns[0] if matched_columns else None,
-            dimensions=dimension_result.dimensions,
+            operation=operation or Operation.SUM,
+            target_column=measure_columns[0] if measure_columns else None,
+            dimensions=dimensions,
             conditions=condition_result.conditions,
             ranking=ranking_result.ranking,
         )

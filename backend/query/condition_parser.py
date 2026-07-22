@@ -83,17 +83,6 @@ class ConditionParser:
         candidates.sort(reverse=True, key=lambda x: x[0])
 
         # -------------------------------------------------
-        # Debug: Condition candidates
-        # -------------------------------------------------
-        print("\n========== CONDITION CANDIDATES ==========")
-        for _, column, original_value, normalized_value in candidates:
-            if column.name == "membership_customer":
-                print(
-                    f"{column.name} | original={repr(original_value)} | normalized={repr(normalized_value)}"
-                )
-        print("==========================================\n")
-
-        # -------------------------------------------------
         # Extract conditions
         # -------------------------------------------------
         for _, column, original_value, normalized_value in candidates:
@@ -106,8 +95,6 @@ class ConditionParser:
                 rf"\b{re.escape(column_name)}\s*=\s*{re.escape(normalized_value)}\b",
                 rf"\b{re.escape(column_name)}\s+equals\s+{re.escape(normalized_value)}\b",
             ]
-
-            matched = False
 
             for pattern in patterns:
 
@@ -127,33 +114,7 @@ class ConditionParser:
                         count=1,
                     )
 
-                    matched = True
                     break
-
-            # -------------------------------------------------
-            # Backward compatibility
-            # -------------------------------------------------
-            if matched:
-                continue
-
-            if re.search(
-                rf"\b{re.escape(normalized_value)}\b",
-                cleaned_text,
-            ):
-                conditions.append(
-                    Condition(
-                        column=column.name,
-                        operator="==",
-                        value=original_value,
-                    )
-                )
-
-                cleaned_text = re.sub(
-                    rf"\b{re.escape(normalized_value)}\b",
-                    " ",
-                    cleaned_text,
-                    count=1,
-                )
 
         # -------------------------------------------------
         # Cleanup

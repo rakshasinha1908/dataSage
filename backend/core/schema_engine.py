@@ -1,6 +1,8 @@
 from models.column_schema import ColumnSchema
 from models.dataset import Dataset
+
 from utils.text_utils import normalize_text
+from utils.column_alias_generator import ColumnAliasGenerator 
 
 class SchemaEngine:
     """
@@ -18,9 +20,14 @@ class SchemaEngine:
 
             series = dataframe[column]
 
+            normalized_name = normalize_text(str(column))
+
             column_schema = ColumnSchema(
                 name=str(column),
-                normalized_name=normalize_text(str(column)),
+                normalized_name=normalized_name,
+                aliases=ColumnAliasGenerator.generate(
+                    normalized_name,
+                ),
                 dtype=str(series.dtype),
                 nullable=bool(series.isnull().any()),
                 unique_count=int(series.nunique(dropna=True)),
@@ -29,11 +36,16 @@ class SchemaEngine:
                     for value in series.dropna().unique().tolist()[:5]
                 ]
             )
-            
+
             print(
                 column_schema.name,
                 column_schema.dtype,
                 column_schema.sample_values,
+            )
+
+            print(
+                "Aliases:",
+                column_schema.aliases,
             )
 
             schema.append(column_schema)

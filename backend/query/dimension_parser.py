@@ -18,7 +18,6 @@ class DimensionParser:
         text: str,
         schema,
     ):
-
         normalized_text = normalize_text(text)
         cleaned_text = normalized_text
 
@@ -39,27 +38,42 @@ class DimensionParser:
             if index + 1 >= len(words):
                 continue
 
-            candidate = words[index + 1]
+            matched_column = None
+            matched_phrase = None
 
-            matched_columns = ColumnMatcher.match(
-                candidate,
-                schema,
-            )
+            phrase_words = words[index + 1:]
 
-            if not matched_columns:
+            for start in range(0, len(phrase_words)):
+                for end in range(len(phrase_words), start, -1):
+
+                    candidate = " ".join(phrase_words[start:end])
+
+                    matched_columns = ColumnMatcher.match(
+                        candidate,
+                        schema,
+                    )
+
+                    if matched_columns:
+                        matched_column = matched_columns[0]
+                        matched_phrase = candidate
+                        break
+
+                if matched_column:
+                    break
+
+            if not matched_column:
                 continue
-
-            column = matched_columns[0]
 
             dimensions.append(
                 Dimension(
-                    column=column.name,
+                    column=matched_column.name,
                 )
             )
 
             cleaned_text = cleaned_text.replace(
-                f"{word} {candidate}",
+                f"{word} {matched_phrase}",
                 "",
+                1,
             )
 
         cleaned_text = " ".join(cleaned_text.split())

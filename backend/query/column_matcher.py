@@ -27,7 +27,7 @@ class ColumnMatcher:
 
         for column in schema:
             print(
-                f"  {column.name} -> {column.normalized_name}"
+                f"  {column.name} -> {[column.normalized_name, *column.aliases]}"
             )
 
         print("=" * 70)
@@ -42,13 +42,21 @@ class ColumnMatcher:
 
         for column in schema:
 
-            print(
-                f"Comparing '{normalized_text}' == '{column.normalized_name}'"
-            )
+            candidate_names = [
+                column.normalized_name,
+                *column.aliases,
+            ]
 
-            if column.normalized_name == normalized_text:
-                print("✅ Exact Match:", column.name)
-                matches.append(column)
+            for candidate in candidate_names:
+
+                print(
+                    f"Comparing '{normalized_text}' == '{candidate}'"
+                )
+
+                if candidate == normalized_text:
+                    print("✅ Exact Match:", column.name)
+                    matches.append(column)
+                    break
 
         if matches:
             print("Returning:", [c.name for c in matches])
@@ -66,15 +74,23 @@ class ColumnMatcher:
 
         for column in schema:
 
-            column_words = set(column.normalized_name.split())
+            candidate_names = [
+                column.normalized_name,
+                *column.aliases,
+            ]
 
-            print(
-                f"{text_words} ⊆ {column_words} -> {text_words.issubset(column_words)}"
-            )
+            for candidate in candidate_names:
 
-            if text_words.issubset(column_words):
-                print("✅ Subset Match:", column.name)
-                matches.append(column)
+                candidate_words = set(candidate.split())
+
+                print(
+                    f"{text_words} ⊆ {candidate_words} -> {text_words.issubset(candidate_words)}"
+                )
+
+                if text_words.issubset(candidate_words):
+                    print("✅ Subset Match:", column.name)
+                    matches.append(column)
+                    break
 
         if matches:
             print("Returning:", [c.name for c in matches])

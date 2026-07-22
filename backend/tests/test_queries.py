@@ -8,7 +8,7 @@ BASE_URL = "http://127.0.0.1:8000"
 # Paste your session_id here after uploading
 # a dataset once from the frontend.
 # ---------------------------------------------
-SESSION_ID = "35549f47-fde1-41ee-9388-78c102d67ed8"
+SESSION_ID = "73e74c76-1b2f-4b84-ab8c-bf8b18f1676e"
 
 print(f"Using Session ID: {SESSION_ID}")
 

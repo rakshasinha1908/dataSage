@@ -2,38 +2,14 @@ from fastapi import APIRouter, HTTPException
 
 from storage.session_manager import SessionManager
 
-import query.operation_parser as op
-import query.dimension_parser as dp
-import query.column_matcher as cm
-import query.condition_parser as cp
-import query.ranking_parser as rp
-import query.intent_validator as iv
-
-print("=" * 80)
-print("USING MODULES")
-print("OperationParser :", op.__file__)
-print("ConditionParser :", cp.__file__)
-print("RankingParser   :", rp.__file__)
-print("DimensionParser :", dp.__file__)
-print("ColumnMatcher   :", cm.__file__)
-print("IntentValidator :", iv.__file__)
-print("=" * 80)
-
-OperationParser = op.OperationParser
-ConditionParser = cp.ConditionParser
-RankingParser = rp.RankingParser
-DimensionParser = dp.DimensionParser
-ColumnMatcher = cm.ColumnMatcher
-IntentValidator = iv.IntentValidator
-
 from core.analytics_engine import AnalyticsEngine
+from core.response_builder import ResponseBuilder
 from core.visualization_selector import VisualizationSelector
 
-from models.query_plan import QueryPlan
-from models.response import Response
-from core.response_builder import ResponseBuilder
 from models.query_context import QueryContext
-from query.query_normalizer import QueryNormalizer
+from models.response import Response
+
+from query.intent_validator import IntentValidator
 from query.query_understanding import QueryUnderstanding
 
 
@@ -52,10 +28,6 @@ def query_dataset(session_id: str, question: str):
         )
 
     print("\n================ DATASET SCHEMA ================")
-    # =====================================================
-    # TODO:
-    # Move query parsing pipeline into QueryUnderstanding
-    # =====================================================
 
     for column in dataset.schema:
         print(
@@ -64,50 +36,23 @@ def query_dataset(session_id: str, question: str):
 
     print("===============================================\n")
 
-    normalized_question = QueryNormalizer.normalize(question)
-
-    parsed = OperationParser.parse(normalized_question)
-
-    condition_result = ConditionParser.parse(
-        parsed["remaining_text"],
+    plan = QueryUnderstanding.parse(
+        question,
         dataset.schema,
     )
-
-    ranking_result = RankingParser.parse(
-        condition_result.cleaned_text,
-    )
-
-    dimension_result = DimensionParser.parse(
-        ranking_result.cleaned_text,
-        dataset.schema,
-    )
-
-    print("=" * 60)
-    print("Remaining text after OperationParser :", parsed["remaining_text"])
-    print("After ConditionParser               :", condition_result.cleaned_text)
-    print("After RankingParser                 :", ranking_result.cleaned_text)
-    print("After DimensionParser               :", dimension_result.cleaned_text)
-    print("Dimensions                          :", [d.column for d in dimension_result.dimensions])
-    print("=" * 60)
-
-    print("\nCalling ColumnMatcher...\n")
-
-    matched_columns = ColumnMatcher.match(
-        dimension_result.cleaned_text,
-        dataset.schema,
-    )
-
-    print("\nReturned from ColumnMatcher.\n")
 
     validation = IntentValidator.validate(
-        parsed["operation"],
-        matched_columns,
+        plan.operation,
+        [plan.target_column] if plan.target_column else [],
     )
 
     print("=" * 60)
     print("Question          :", question)
-    print("Operation         :", parsed["operation"])
-    print("Matched Columns   :", [c.name for c in matched_columns])
+    print("Operation         :", plan.operation)
+    print(
+        "Matched Columns   :",
+        [plan.target_column.name] if plan.target_column else [],
+    )
     print("Validation        :", validation.success)
     print("Validation Error  :", validation.error)
     print("=" * 60)
@@ -120,18 +65,6 @@ def query_dataset(session_id: str, question: str):
             can_explain=False,
             error=validation.error,
         )
-
-    # plan = QueryPlan(
-    #     operation=parsed["operation"],
-    #     target_column=validation.column,
-    #     dimensions=dimension_result.dimensions,
-    #     conditions=condition_result.conditions,
-    #     ranking=ranking_result.ranking,
-    # )
-    plan = QueryUnderstanding.parse(
-        question,
-        dataset.schema,
-    )
 
     result = AnalyticsEngine.execute(
         dataset,

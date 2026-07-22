@@ -14,6 +14,7 @@ class ColumnSchema:
     nullable: bool
     unique_count: int
     sample_values: List[Any] = field(default_factory=list)
+    aliases: list[str] = field(default_factory=list)
 
     @property
     def is_numeric(self) -> bool:
