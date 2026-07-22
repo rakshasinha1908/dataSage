@@ -8,7 +8,6 @@ class OperationParser:
     Assumes the question has already been normalized by QueryNormalizer.
     """
 
-    
     OPERATIONS = {
         # Statistical Operations (Canonical only)
         "average": Operation.MEAN,
@@ -28,7 +27,7 @@ class OperationParser:
 
     @classmethod
     def parse(cls, question: str) -> dict:
-        
+
         print("\n" + "=" * 60)
         print("🔥 OPERATION PARSER IS RUNNING")
         print("INPUT:", repr(question))
@@ -37,20 +36,21 @@ class OperationParser:
         normalized_question = question.lower().strip()
 
         # ----------------------------------------
-        # Dataset Preview (Top / Bottom)
+        # Dataset Preview (Top)
         # ----------------------------------------
 
-        if "top" in normalized_question and (
-            "row" in normalized_question
-            or "rows" in normalized_question
-            or "record" in normalized_question
-            or "records" in normalized_question
+        if (
+            "top" in normalized_question
+            and any(
+                word in normalized_question
+                for word in ("row", "rows", "record", "records")
+            )
         ):
 
             remaining_text = normalized_question
 
+            # Keep "top" so RankingParser can detect direction.
             for word in (
-                "top",
                 "rows",
                 "row",
                 "records",
@@ -65,17 +65,22 @@ class OperationParser:
                 "remaining_text": remaining_text,
             }
 
-        if "bottom" in normalized_question and (
-            "row" in normalized_question
-            or "rows" in normalized_question
-            or "record" in normalized_question
-            or "records" in normalized_question
+        # ----------------------------------------
+        # Dataset Preview (Bottom)
+        # ----------------------------------------
+
+        if (
+            "bottom" in normalized_question
+            and any(
+                word in normalized_question
+                for word in ("row", "rows", "record", "records")
+            )
         ):
 
             remaining_text = normalized_question
 
+            # Keep "bottom" so RankingParser can detect direction.
             for word in (
-                "bottom",
                 "rows",
                 "row",
                 "records",
@@ -117,7 +122,7 @@ class OperationParser:
 
             remaining_text = normalized_question
 
-            # Remove verb
+            # Remove retrieval verb only.
             for phrase in (
                 "show me",
                 "show",

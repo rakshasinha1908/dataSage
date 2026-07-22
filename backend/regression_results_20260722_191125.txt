@@ -1,0 +1,53 @@
+================================================================================
+DataSage V2 Regression Report
+Generated : 22-07-2026 19:11:25
+Session ID: a7f8854c-3648-4a42-8d51-34c89f5ba60c
+================================================================================
+
+✅ PASS | describe dataset
+✅ PASS | dataset summary
+✅ PASS | show columns
+✅ PASS | show schema
+✅ PASS | show rows
+✅ PASS | show 10 rows
+✅ PASS | show all rows
+✅ PASS | top 10 rows
+✅ PASS | bottom 10 rows
+✅ PASS | first 15 rows
+✅ PASS | last 20 rows
+✅ PASS | show rows where city is hyderabad
+✅ PASS | show rows where subscription status is yes
+✅ PASS | show 10 rows where city is hyderabad
+✅ PASS | show all rows where subscription status is yes
+✅ PASS | average viewing time
+✅ PASS | sum viewing time
+✅ PASS | maximum viewing time
+✅ PASS | minimum viewing time
+✅ PASS | count viewers
+✅ PASS | average viewing time by city
+✅ PASS | average viewing time by favorite cartoon
+✅ PASS | count viewers by city
+✅ PASS | count viewers by favorite cartoon
+✅ PASS | average viewing time where city is hyderabad
+✅ PASS | count viewers where subscription status is yes
+✅ PASS | top 5 cities by viewing time
+✅ PASS | bottom 5 favorite cartoons by viewing time
+❌ FAIL | average viewer name
+❌ FAIL | sum favorite cartoon
+
+================================================================================
+SUMMARY
+================================================================================
+Passed : 28
+Failed : 2
+Success Rate : 93.33%
+================================================================================
+
+FAILED QUERIES
+--------------------------------------------------------------------------------
+• average viewer name
+  Reason : 'mean' can only be applied to numeric columns.
+
+• sum favorite cartoon
+  Reason : 'sum' can only be applied to numeric columns.
+

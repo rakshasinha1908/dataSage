@@ -20,7 +20,6 @@ class ColumnMatcher:
         normalized_text = normalize_text(text)
 
         print("\n" + "=" * 70)
-        print("COLUMN MATCHER")
         print("Input:", text)
         print("Normalized:", normalized_text)
         print("Available Columns:")

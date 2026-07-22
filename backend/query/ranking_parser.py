@@ -50,7 +50,7 @@ class RankingParser:
 
         cleaned_text = normalize_text(text)
 
-        ranking = Ranking()
+        ranking = None
 
         # -----------------------------------
         # "show all rows"
@@ -61,8 +61,10 @@ class RankingParser:
 
         if all_match:
 
-            ranking.is_explicit = True
-            ranking.show_all = True
+            ranking = Ranking(
+                is_explicit=True,
+                show_all=True,
+            )
 
             cleaned_text = cls.ALL_PATTERN.sub(
                 "",
@@ -87,13 +89,15 @@ class RankingParser:
 
                 keyword = keyword_match.group(1).lower()
 
-                ranking.limit = int(keyword_match.group(2))
-                ranking.is_explicit = True
-
-                if keyword in ("last", "bottom"):
-                    ranking.direction = "asc"
-                else:
-                    ranking.direction = "desc"
+                ranking = Ranking(
+                    limit=int(keyword_match.group(2)),
+                    direction=(
+                        "asc"
+                        if keyword in ("last", "bottom")
+                        else "desc"
+                    ),
+                    is_explicit=True,
+                )
 
                 cleaned_text = cls.LIMIT_KEYWORD_PATTERN.sub(
                     "",
@@ -115,10 +119,10 @@ class RankingParser:
 
                 if row_limit_match:
 
-                    ranking.limit = int(
-                        row_limit_match.group(1)
+                    ranking = Ranking(
+                        limit=int(row_limit_match.group(1)),
+                        is_explicit=True,
                     )
-                    ranking.is_explicit = True
 
                     cleaned_text = cls.LIMIT_ROWS_PATTERN.sub(
                         "",

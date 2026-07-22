@@ -36,7 +36,8 @@ class AnalyticsEngine:
         if plan.operation == Operation.HEAD:
             limit = (
                 plan.ranking.limit
-                if plan.ranking.limit is not None
+                if plan.ranking is not None
+                and plan.ranking.limit is not None
                 else 5
             )
 
@@ -45,7 +46,8 @@ class AnalyticsEngine:
         if plan.operation == Operation.TAIL:
             limit = (
                 plan.ranking.limit
-                if plan.ranking.limit is not None
+                if plan.ranking is not None
+                and plan.ranking.limit is not None
                 else 5
             )
 
@@ -58,10 +60,16 @@ class AnalyticsEngine:
 
             total_matching_rows = len(df)
 
-            if plan.ranking.show_all:
+            if (
+                plan.ranking is not None
+                and plan.ranking.show_all
+            ):
                 preview_limit = total_matching_rows
 
-            elif plan.ranking.is_explicit:
+            elif (
+                plan.ranking is not None
+                and plan.ranking.is_explicit
+            ):
                 preview_limit = min(
                     plan.ranking.limit,
                     total_matching_rows,
@@ -149,14 +157,18 @@ class AnalyticsEngine:
             # -------------------------------
             # Ranking
             # -------------------------------
-            if plan.ranking.direction is not None:
+            if (
+                plan.ranking is not None
+                and plan.ranking.direction is not None
+            ):
                 ascending = plan.ranking.direction == "asc"
                 result = result.sort_values(
                     ascending=ascending
                 )
 
             if (
-                plan.ranking.is_explicit
+                plan.ranking is not None
+                and plan.ranking.is_explicit
                 and plan.ranking.limit is not None
             ):
                 result = result.head(

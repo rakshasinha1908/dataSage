@@ -35,47 +35,88 @@ class QueryUnderstanding:
         schema: list[ColumnSchema],
     ) -> QueryPlan:
 
+        # ----------------------------------------
+        # Normalize query
+        # ----------------------------------------
+
         normalized_question = QueryNormalizer.normalize(question)
 
         parsed = OperationParser.parse(normalized_question)
+
+        operation = parsed["operation"]
+
+        # ----------------------------------------
+        # Extract conditions
+        # ----------------------------------------
 
         condition_result = ConditionParser.parse(
             parsed["remaining_text"],
             schema,
         )
 
+        # ----------------------------------------
+        # Dataset preview operations
+        # ----------------------------------------
+
+        if operation in (
+            Operation.SHOW_ROWS,
+            Operation.HEAD,
+            Operation.TAIL,
+        ):
+
+            ranking_result = RankingParser.parse(
+                condition_result.cleaned_text,
+            )
+            print("====================================")
+            print("Preview Operation :", operation)
+            print("Ranking :", ranking_result.ranking)
+            print("====================================")
+
+            return QueryPlan(
+                operation=operation,
+                target_column=None,
+                dimensions=[],
+                conditions=condition_result.conditions,
+                ranking=ranking_result.ranking,
+            )
+
+        # ----------------------------------------
+        # Analytical operations
+        # ----------------------------------------
+
         ranking_result = RankingParser.parse(
             condition_result.cleaned_text,
         )
 
-        operation = parsed["operation"]
+        dimensions = []
+        measure_columns = []
 
-        # --------------------------------------------------
-        # Ranking queries
-        # --------------------------------------------------
         if ranking_result.ranking is not None:
 
             analytics_result = RankingAnalyticsParser.parse(
                 ranking_result.cleaned_text,
             )
 
-            group_columns = ColumnMatcher.match(
-                analytics_result.group_phrase,
-                schema,
-            )
+            if analytics_result.group_phrase:
 
-            measure_columns = ColumnMatcher.match(
-                analytics_result.measure_phrase,
-                schema,
-            )
+                group_columns = ColumnMatcher.match(
+                    analytics_result.group_phrase,
+                    schema,
+                )
 
-            dimensions = []
+                if group_columns:
 
-            if group_columns:
-                dimensions.append(
-                    Dimension(
-                        column=group_columns[0].name
+                    dimensions.append(
+                        Dimension(
+                            column=group_columns[0].name
+                        )
                     )
+
+            if analytics_result.measure_phrase:
+
+                measure_columns = ColumnMatcher.match(
+                    analytics_result.measure_phrase,
+                    schema,
                 )
 
             if (
@@ -85,9 +126,6 @@ class QueryUnderstanding:
             ):
                 operation = Operation.SUM
 
-        # --------------------------------------------------
-        # Normal analytical queries
-        # --------------------------------------------------
         else:
 
             dimension_result = DimensionParser.parse(
@@ -101,6 +139,11 @@ class QueryUnderstanding:
             )
 
             dimensions = dimension_result.dimensions
+            
+        print("====================================")
+        print("Operation :", operation)
+        print("Ranking   :", ranking_result.ranking)
+        print("====================================")
 
         return QueryPlan(
             operation=operation or Operation.SUM,

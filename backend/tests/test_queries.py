@@ -8,98 +8,270 @@ BASE_URL = "http://127.0.0.1:8000"
 # Paste your session_id here after uploading
 # a dataset once from the frontend.
 # ---------------------------------------------
-SESSION_ID = "73e74c76-1b2f-4b84-ab8c-bf8b18f1676e"
+SESSION_ID = "2153de99-a5eb-4796-8a76-4acbc9eb4f19"
 
 print(f"Using Session ID: {SESSION_ID}")
 
+# hospital dataset
 TEST_QUERIES = [
 
-    # =====================================
     # Metadata
-    # =====================================
     "describe dataset",
     "dataset summary",
     "show columns",
     "show schema",
 
-    # =====================================
     # Row Retrieval
-    # =====================================
     "show rows",
-    "show me rows",
-    "display rows",
-    "list rows",
-
     "show 10 rows",
-    "show 25 rows",
-    "show 50 rows",
-    "show 100 rows",
-    "show 500 rows",
-
     "show all rows",
-    "show every row",
-    "show all records",
-
-    # =====================================
-    # Ranking
-    # =====================================
     "top 10 rows",
     "bottom 10 rows",
     "first 15 rows",
     "last 20 rows",
 
-    "top 10 rows where city is delhi",
-    "bottom 10 rows where city is delhi",
-
-    # =====================================
     # Conditions
-    # =====================================
-    "show rows where city is delhi",
-    "show rows where prepaid order is yes",
-    "show rows where membership customer is yes",
+    "show rows where gender is female",
+    "show rows where readmission is no",
+    "show rows where outcome is recovered",
 
-    "show 10 rows where city is delhi",
-    "show all rows where city is delhi",
+    "show 10 rows where condition is heart disease",
 
-    # =====================================
     # Aggregations
-    # =====================================
-    "average transaction amount",
-    "sum transaction amount",
-    "maximum transaction amount",
-    "minimum transaction amount",
-    "count customers",
+    "average cost",
+    "sum cost",
+    "maximum cost",
+    "minimum cost",
+    "average age",
+    "average length of stay",
+    "count patients",
 
-    # =====================================
     # Group By
-    # =====================================
-    "average transaction amount by category",
-    "average transaction amount by city",
-    "sum transaction amount by category",
-    "count customers by city",
+    "average cost by condition",
+    "average cost by procedure",
+    "average length of stay by condition",
+    "count patients by gender",
+    "count patients by outcome",
 
-    # =====================================
     # Combined
-    # =====================================
-    "average transaction amount where city is delhi",
-    "count customers where prepaid order is yes",
-    "sum transaction amount where membership customer is yes",
+    "average cost where gender is female",
+    "count patients where readmission is no",
+    "average length of stay where outcome is recovered",
 
-    # =====================================
-    # Ranking + Group By
-    # =====================================
-    "top 5 categories by transaction amount",
-    "bottom 10 cities by transaction amount",
+    # Ranking
+    "top 5 conditions by cost",
+    "bottom 5 procedures by cost",
 
-    # =====================================
-    # Invalid Queries
-    # =====================================
-    "show 0 rows",
-    "show 99999 rows",
-    "average comments",
-    "sum customer full name",
+    # Invalid
+    "average procedure",
+    "sum patient id",
 ]
 
+# flower dataset
+# TEST_QUERIES = [
+
+#     # Metadata
+#     "describe dataset",
+#     "dataset summary",
+#     "show columns",
+#     "show schema",
+
+#     # Row Retrieval
+#     "show rows",
+#     "show 10 rows",
+#     "show all rows",
+#     "top 10 rows",
+#     "bottom 10 rows",
+#     "first 15 rows",
+#     "last 20 rows",
+
+#     # Conditions
+#     "show rows where species is rose",
+#     "show rows where fragrance is mild",
+
+#     "show 10 rows where species is rose",
+
+#     # Aggregations
+#     "average height",
+#     "sum height",
+#     "maximum height",
+#     "minimum height",
+#     "count flowers",
+
+#     # Group By
+#     "average height by species",
+#     "average height by fragrance",
+#     "count flowers by species",
+#     "count flowers by fragrance",
+
+#     # Combined
+#     "average height where species is rose",
+#     "count flowers where fragrance is mild",
+
+#     # Ranking
+#     "top 5 species by height",
+#     "bottom 5 fragrances by height",
+
+#     # Invalid
+#     "average fragrance",
+#     "sum species",
+# ]
+
+# sales dataset
+# TEST_QUERIES = [
+
+#     # =====================================
+#     # Metadata
+#     # =====================================
+#     "describe dataset",
+#     "dataset summary",
+#     "show columns",
+#     "show schema",
+
+#     # =====================================
+#     # Row Retrieval
+#     # =====================================
+#     "show rows",
+#     "show me rows",
+#     "display rows",
+#     "list rows",
+
+#     "show 10 rows",
+#     "show 25 rows",
+#     "show 50 rows",
+#     "show 100 rows",
+#     "show 500 rows",
+
+#     "show all rows",
+#     "show every row",
+#     "show all records",
+
+#     # =====================================
+#     # Ranking
+#     # =====================================
+#     "top 10 rows",
+#     "bottom 10 rows",
+#     "first 15 rows",
+#     "last 20 rows",
+
+#     "top 10 rows where city is delhi",
+#     "bottom 10 rows where city is delhi",
+
+#     # =====================================
+#     # Conditions
+#     # =====================================
+#     "show rows where city is delhi",
+#     "show rows where prepaid order is yes",
+#     "show rows where membership customer is yes",
+
+#     "show 10 rows where city is delhi",
+#     "show all rows where city is delhi",
+
+#     # =====================================
+#     # Aggregations
+#     # =====================================
+#     "average transaction amount",
+#     "sum transaction amount",
+#     "maximum transaction amount",
+#     "minimum transaction amount",
+#     "count customers",
+
+#     # =====================================
+#     # Group By
+#     # =====================================
+#     "average transaction amount by category",
+#     "average transaction amount by city",
+#     "sum transaction amount by category",
+#     "count customers by city",
+
+#     # =====================================
+#     # Combined
+#     # =====================================
+#     "average transaction amount where city is delhi",
+#     "count customers where prepaid order is yes",
+#     "sum transaction amount where membership customer is yes",
+
+#     # =====================================
+#     # Ranking + Group By
+#     # =====================================
+#     "top 5 categories by transaction amount",
+#     "bottom 10 cities by transaction amount",
+
+#     # =====================================
+#     # Invalid Queries
+#     # =====================================
+#     "show 0 rows",
+#     "show 99999 rows",
+#     "average comments",
+#     "sum customer full name",
+# ]
+
+# cartoon dataset
+# TEST_QUERIES = [
+
+#     # =====================================
+#     # Metadata
+#     # =====================================
+#     "describe dataset",
+#     "dataset summary",
+#     "show columns",
+#     "show schema",
+
+#     # =====================================
+#     # Row Retrieval
+#     # =====================================
+#     "show rows",
+#     "show 10 rows",
+#     "show all rows",
+#     "top 10 rows",
+#     "bottom 10 rows",
+#     "first 15 rows",
+#     "last 20 rows",
+
+#     # =====================================
+#     # Conditions
+#     # =====================================
+#     "show rows where city is hyderabad",
+#     "show rows where subscription status is yes",
+
+#     "show 10 rows where city is hyderabad",
+#     "show all rows where subscription status is yes",
+
+#     # =====================================
+#     # Aggregations
+#     # =====================================
+#     "average viewing time",
+#     "sum viewing time",
+#     "maximum viewing time",
+#     "minimum viewing time",
+#     "count viewers",
+
+#     # =====================================
+#     # Group By
+#     # =====================================
+#     "average viewing time by city",
+#     "average viewing time by favorite cartoon",
+#     "count viewers by city",
+#     "count viewers by favorite cartoon",
+
+#     # =====================================
+#     # Combined
+#     # =====================================
+#     "average viewing time where city is hyderabad",
+#     "count viewers where subscription status is yes",
+
+#     # =====================================
+#     # Ranking
+#     # =====================================
+#     "top 5 cities by viewing time",
+#     "bottom 5 favorite cartoons by viewing time",
+
+#     # =====================================
+#     # Invalid
+#     # =====================================
+#     "average viewer name",
+#     "sum favorite cartoon",
+# ]
 
 
 
