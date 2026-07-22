@@ -28,21 +28,17 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-export default function ChartBlock({ chart }) {
-  if (
-    !chart ||
-    !Array.isArray(chart.labels) ||
-    !Array.isArray(chart.values) ||
-    chart.labels.length === 0 ||
-    chart.labels.length !== chart.values.length
-  ) {
-    return null;
-  }
+export default function ChartBlock({
+  chart,
+  rows,
+}) {  if (!chart || !Array.isArray(rows) || rows.length === 0) {
+  return null;
+}
 
-  const data = chart.labels.map((label, i) => ({
-    name: label,
-    value: chart.values?.[i] ?? 0,
-  }));
+  const data = rows.map((row) => ({
+  name: row.label,
+  value: row.value,
+}));
 
   return (
     <div className="ds-chart-area">
@@ -57,7 +53,7 @@ export default function ChartBlock({ chart }) {
       </div>
 
       <ResponsiveContainer width="100%" height={220}>
-        {chart.type === "line" ? (
+        {chart.chart_type === "line" ? (
           <AreaChart data={data}>
             <defs>
               <linearGradient

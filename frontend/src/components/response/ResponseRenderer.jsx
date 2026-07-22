@@ -147,10 +147,13 @@ export default function ResponseRenderer({ response }) {
       </div>
 
       {isStructured &&
-        response?.chart?.labels &&
-        response?.chart?.values && (
-          <ChartBlock chart={response.chart} />
-        )}
+  response?.chart &&
+  response?.table?.length > 0 && (
+    <ChartBlock
+      chart={response.chart}
+      rows={response.table}
+    />
+)}
     </div>
   );
 }

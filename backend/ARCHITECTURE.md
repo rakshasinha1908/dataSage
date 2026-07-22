@@ -3,9 +3,9 @@
 > Architecture is not a collection of modules.
 > It is a collection of decisions.
 
-This document defines the architectural principles, system boundaries, and deployment goals for DataSage V2.
+This document defines the architectural principles, system boundaries, engineering philosophy, and deployment goals for DataSage V2.
 
-Every future change should be evaluated against this document before being implemented.
+Every future change should be evaluated against this document before implementation.
 
 ---
 
@@ -13,48 +13,49 @@ Every future change should be evaluated against this document before being imple
 
 DataSage is a generic analytics engine that enables users to explore structured datasets using natural language.
 
-Given any tabular dataset, a user should be able to ask analytical questions in plain English and receive accurate results without writing SQL or code.
+Given any structured tabular dataset, a user should be able to ask analytical questions in plain English and receive accurate analytical results without writing SQL or code.
 
-DataSage should never rely on dataset-specific logic.
+DataSage should never depend on dataset-specific logic.
 
 ---
 
-# Vision for V2
+# Vision
 
 DataSage V2 is **not** a chatbot.
 
 It is **not** an LLM wrapper.
 
-It is an analytics engine whose input happens to be natural language.
+It is an analytics engine whose interface happens to be natural language.
 
-Natural language is only the interface.
+Natural language exists only to express analytical intent.
 
-The system itself should remain deterministic.
+The system itself remains deterministic.
 
 ---
 
 # Deployment Goal
 
-A deployable V1 satisfies these requirements:
+A deployable V1 satisfies the following requirements.
 
-- Upload any structured CSV.
-- Infer its schema automatically.
-- Understand common analytical questions.
-- Produce correct analytical results.
-- Return appropriate visualizations.
-- Operate without dataset-specific rules.
+- Upload any structured CSV
+- Infer schema automatically
+- Understand common analytical questions
+- Execute analytics correctly
+- Produce suitable visualizations
+- Operate without dataset-specific logic
+- Return structured frontend responses
 
-Nothing more is required for deployment.
+Everything else belongs in future versions.
 
 ---
 
-# System Pipeline
+# High-Level System Pipeline
 
 ```
                 User Question
                       │
                       ▼
-            Query Normalization
+            Query Normalizer
                       │
                       ▼
           Query Understanding
@@ -63,16 +64,16 @@ Nothing more is required for deployment.
                 QueryPlan
                       │
                       ▼
-           Intent Validation
+          Intent Validation
                       │
                       ▼
-            Analytics Engine
+           Analytics Engine
                       │
                       ▼
        Visualization Selector
                       │
                       ▼
-            Response Builder
+           Response Builder
                       │
                       ▼
                  Frontend
@@ -82,13 +83,51 @@ Every stage owns exactly one responsibility.
 
 ---
 
+# Query Understanding Pipeline
+
+The Query Understanding subsystem converts natural language into a deterministic QueryPlan.
+
+```
+User Question
+      │
+      ▼
+QueryNormalizer
+      │
+      ▼
+OperationParser
+      │
+      ▼
+ConditionParser
+      │
+      ▼
+RankingParser
+      │
+      ▼
+RankingAnalyticsParser
+      │
+      ▼
+DimensionParser
+      │
+      ▼
+ColumnMatcher
+      │
+      ▼
+QueryPlan
+```
+
+Every parser extracts one aspect of intent.
+
+No parser performs analytics.
+
+---
+
 # Architectural Principles
 
 ## 1. QueryPlan is the contract.
 
 Natural language exists only before QueryPlan.
 
-After QueryPlan has been created, no downstream component should inspect the original user question.
+After QueryPlan has been created, no downstream component should inspect the original question.
 
 ---
 
@@ -96,18 +135,19 @@ After QueryPlan has been created, no downstream component should inspect the ori
 
 Each module should solve exactly one problem.
 
-If multiple unrelated concerns appear inside one module, introduce a new layer instead of expanding responsibilities.
+When responsibilities begin to overlap, introduce a new layer instead of expanding an existing one.
 
 ---
 
 ## 3. The backend never knows the dataset.
 
-No component may depend on:
+No component may depend on
 
-- specific column names
+- column names
 - business terminology
+- dataset type
 - industry assumptions
-- dataset-specific rules
+- hardcoded rules
 
 Everything must be inferred from schema.
 
@@ -115,11 +155,11 @@ Everything must be inferred from schema.
 
 ## 4. Execution is deterministic.
 
-LLMs may help understand language.
+Natural language understanding may evolve.
 
-Execution must always remain deterministic.
+Execution must remain deterministic.
 
-The same QueryPlan should always produce the same result.
+The same QueryPlan must always produce the same analytical result.
 
 ---
 
@@ -127,22 +167,42 @@ The same QueryPlan should always produce the same result.
 
 Execution should never attempt to recover from an invalid QueryPlan.
 
-Invalid intent should be rejected by the validation layer.
+Validation rejects unsupported or logically inconsistent requests.
 
 ---
 
 ## 6. Models communicate between subsystems.
 
-Subsystems exchange structured models instead of dictionaries.
+Subsystems exchange structured models rather than dictionaries.
 
-Examples:
+Examples include
 
 - QueryPlan
+- Dataset
+- ColumnSchema
 - Condition
 - Ranking
 - QueryResult
-- Dataset
-- ColumnSchema
+
+---
+
+## 7. Regression stability comes before feature velocity.
+
+Every parser improvement must preserve existing behaviour.
+
+Every architectural change should pass the regression suite before being merged.
+
+Bug fixes should improve general behaviour rather than introduce dataset-specific patches.
+
+---
+
+## 8. Genericity is measured by behaviour.
+
+The absence of dataset-specific code is not sufficient.
+
+The same query should behave correctly across unrelated datasets.
+
+Generic behaviour is validated through cross-domain regression testing.
 
 ---
 
@@ -150,9 +210,9 @@ Examples:
 
 ## Query Understanding
 
-Responsible for converting natural language into structured intent.
+Responsible for converting natural language into structured analytical intent.
 
-Owns:
+Owns
 
 - normalization
 - operation extraction
@@ -162,7 +222,7 @@ Owns:
 - aggregation target extraction
 - column matching
 
-Does not own:
+Does not own
 
 - analytics
 - validation
@@ -174,7 +234,7 @@ Does not own:
 
 Represents analytical intent.
 
-Every downstream subsystem consumes QueryPlan instead of raw language.
+Every downstream subsystem consumes QueryPlan rather than raw language.
 
 ---
 
@@ -182,12 +242,12 @@ Every downstream subsystem consumes QueryPlan instead of raw language.
 
 Ensures QueryPlan is logically executable.
 
-Examples:
+Examples
 
 - invalid aggregation
-- missing measure
 - unsupported operation
 - incompatible dimensions
+- missing measure
 
 Validation never performs analytics.
 
@@ -197,14 +257,14 @@ Validation never performs analytics.
 
 Pure deterministic computation.
 
-Responsible for:
+Responsible for
 
 - filtering
 - grouping
 - aggregation
-- ranking
 - sorting
-- statistics
+- ranking
+- descriptive statistics
 
 Never performs NLP.
 
@@ -212,7 +272,7 @@ Never performs NLP.
 
 ## Visualization Selector
 
-Chooses the most suitable visualization.
+Chooses the most appropriate visualization.
 
 It never changes analytical results.
 
@@ -220,9 +280,14 @@ It never changes analytical results.
 
 ## Response Builder
 
-Converts execution output into frontend-friendly responses.
+Converts analytical output into frontend-friendly responses.
 
-Owns summaries, visualization payloads, metadata, and formatting.
+Responsible for
+
+- summaries
+- visualization payloads
+- metadata
+- formatting
 
 ---
 
@@ -230,65 +295,69 @@ Owns summaries, visualization payloads, metadata, and formatting.
 
 ## Stable
 
-✅ FastAPI structure
+✅ FastAPI application
+
+✅ Session management
 
 ✅ Dataset loading
 
 ✅ Schema inference
 
-✅ Analytics execution
+✅ Query normalization
+
+✅ Query understanding
+
+✅ QueryPlan generation
+
+✅ Intent validation
+
+✅ Analytics engine
 
 ✅ Response generation
 
-✅ Session management
+✅ Cross-dataset regression suite
 
 ---
 
-## Needs Stabilization
+## Current Engineering Focus
 
-Query Understanding
-
-Specifically:
-
-- semantic interpretation
-- ranking understanding
-- aggregation target detection
-- validation
-
-This is currently the primary engineering focus.
+- Frontend integration
+- Visualization refinement
+- User experience
+- Deployment readiness
+- Documentation
 
 ---
 
-## Deferred Until After Deployment
+# Deferred Until V2.1
 
 The following ideas are intentionally postponed.
 
-- multiple grouping dimensions
-- BETWEEN
+- Multiple grouping dimensions
+- BETWEEN operator
 - DISTINCT
-- advanced date operators
-- conversational memory
+- Advanced date operations
+- Conversational memory
 - SQL export
-- advanced statistical operations
-- plugin architecture
+- Plugin architecture
+- Advanced statistical analysis
 
-These are V2.1 features.
-
-They must not delay deployment.
+These features must not delay deployment.
 
 ---
 
 # Definition of Done
 
-DataSage V2 is considered deployable when:
+DataSage V2 is considered deployable when
 
 - regression suite passes
-- frontend communicates correctly
-- no dataset-specific logic exists
+- frontend is fully integrated
+- backend contains no dataset-specific logic
 - QueryPlan generation is stable
-- validation catches invalid queries
+- validation catches invalid requests
 - analytics engine produces correct results
-- project is deployable through FastAPI + React
+- visualizations render correctly
+- application is deployable through FastAPI + React
 
 Perfection is not required.
 
@@ -298,11 +367,11 @@ Correctness, maintainability, and stability are.
 
 # Engineering Rules
 
-Every proposed change must answer three questions.
+Every proposed change should answer three questions.
 
 ## 1.
 
-Does this move us closer to deployment?
+Does this move the product closer to deployment?
 
 If not, postpone it.
 
@@ -310,7 +379,7 @@ If not, postpone it.
 
 ## 2.
 
-Does this solve an architectural problem instead of a single failing example?
+Does this solve an architectural problem instead of a single example?
 
 If not, avoid patching.
 
@@ -318,27 +387,44 @@ If not, avoid patching.
 
 ## 3.
 
-Can this responsibility belong to an existing component?
+Does this responsibility belong to an existing component?
+
+If yes, extend that component.
 
 If not, introduce a new layer.
 
-Otherwise, keep the architecture simple.
+Keep the architecture simple.
+
+---
+
+# Engineering Philosophy
+
+Prefer small, isolated changes.
+
+When a regression appears
+
+1. Identify the component that owns the responsibility.
+2. Fix only that component.
+3. Validate against the regression suite.
+
+Correct architecture reduces the number of files required for each fix.
 
 ---
 
 # Current Milestone
 
-We are now in the stabilization phase.
+The backend architecture is now considered stable.
 
-Priority order:
+The remaining work focuses on transforming the engine into a deployable product.
 
-1. Stabilize Query Understanding.
-2. Eliminate remaining regressions.
-3. Perform broad query testing.
-4. Polish frontend.
-5. Deploy.
+Priority
 
-No new features will be added before deployment.
+1. Freeze backend architecture.
+2. Complete frontend integration.
+3. Improve visualization quality.
+4. Polish user experience.
+5. Expand regression coverage.
+6. Deploy V1.
 
 ---
 
