@@ -1,7 +1,7 @@
 from dataclasses import dataclass
+from typing import Any
 
 from models.query_plan import QueryPlan
-from models.response import Response
 
 
 @dataclass
@@ -15,4 +15,4 @@ class QueryContext:
 
     query_plan: QueryPlan
 
-    response: Response
+    response: dict[str, Any]

@@ -47,4 +47,4 @@ def generate_insight(
     return {
         "success": True,
         "insight": insight,
-    }
+    } 

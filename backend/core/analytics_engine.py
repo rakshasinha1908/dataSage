@@ -157,15 +157,22 @@ class AnalyticsEngine:
             # -------------------------------
             # Ranking
             # -------------------------------
+
+            # If the user explicitly asked for ascending/descending,
+            # respect it. Otherwise, default to descending.
             if (
                 plan.ranking is not None
                 and plan.ranking.direction is not None
             ):
                 ascending = plan.ranking.direction == "asc"
-                result = result.sort_values(
-                    ascending=ascending
-                )
+            else:
+                ascending = False
 
+            result = result.sort_values(
+                ascending=ascending
+            )
+
+            # Apply Top-N / Bottom-N only if explicitly requested.
             if (
                 plan.ranking is not None
                 and plan.ranking.is_explicit

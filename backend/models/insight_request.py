@@ -12,4 +12,4 @@ class InsightRequest:
 
     analysis: str
 
-    answer: Any
+    analytical_result: dict[str, Any]

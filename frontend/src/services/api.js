@@ -11,7 +11,7 @@ export async function uploadDataset(file) {
 
   if (!response.ok) {
     throw new Error("Upload failed.");
-  }
+  } 
 
   return response.json();
 }
@@ -30,3 +30,23 @@ export async function queryDataset(sessionId, question) {
 
   return response.json();
 }
+
+export async function generateInsight(sessionId, question) {
+  const response = await fetch(`${BASE_URL}/insight`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      session_id: sessionId,
+      follow_up_question: question,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Insight generation failed.");
+  }
+
+  return response.json();
+}
+

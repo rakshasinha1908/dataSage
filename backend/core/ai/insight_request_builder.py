@@ -2,7 +2,6 @@ from core.analysis_builder import AnalysisBuilder
 
 from models.insight_request import InsightRequest
 from models.query_plan import QueryPlan
-from models.response import Response
 
 
 class InsightRequestBuilder:
@@ -16,7 +15,7 @@ class InsightRequestBuilder:
         cls,
         question: str,
         query_plan: QueryPlan,
-        response: Response,
+        response: dict,
     ) -> InsightRequest:
 
         analysis = AnalysisBuilder.build(
@@ -26,5 +25,5 @@ class InsightRequestBuilder:
         return InsightRequest(
             question=question,
             analysis=analysis,
-            answer=response.answer,
+            analytical_result=response,
         )
