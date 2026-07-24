@@ -7,6 +7,8 @@ from core.query_engine import QueryEngine
 from models.insight_api_request import InsightAPIRequest
 
 from storage.session_manager import SessionManager
+from models.query_context import QueryContext
+
 
 router = APIRouter(
     prefix="/chat",
@@ -25,7 +27,7 @@ def chat(request: InsightAPIRequest):
     3. Otherwise -> treat as conversational follow-up.
     """
 
-    dataset = SessionManager.get_dataset(
+    dataset = SessionManager.get(
         request.session_id,
     )
 
@@ -46,11 +48,14 @@ def chat(request: InsightAPIRequest):
 
     if response.get("success"):
 
-        SessionManager.save_query_context(
-            session_id=request.session_id,
+        query_context = QueryContext(
             question=request.follow_up_question,
             query_plan=plan,
             response=response,
+        )
+        SessionManager.save_query_context(
+            request.session_id,
+            query_context,
         )
 
         return {
@@ -111,7 +116,7 @@ def chat(request: InsightAPIRequest):
         response=query_context.response,
     )
 
-    insight = InsightEngine.generate(
+    insight = InsightEngine().generate(
         insight_request,
     )
 

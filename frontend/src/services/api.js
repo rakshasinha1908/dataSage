@@ -16,37 +16,21 @@ export async function uploadDataset(file) {
   return response.json();
 }
 
-export async function queryDataset(sessionId, question) {
-  const params = new URLSearchParams({
-    session_id: sessionId,
-    question,
-  });
-
-  const response = await fetch(`${BASE_URL}/query?${params}`);
-
-  if (!response.ok) {
-    throw new Error("Query failed.");
-  }
-
-  return response.json();
-}
-
-export async function generateInsight(sessionId, question) {
-  const response = await fetch(`${BASE_URL}/insight`, {
+export async function chat(sessionId, message) {
+  const response = await fetch(`${BASE_URL}/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
       session_id: sessionId,
-      follow_up_question: question,
+      follow_up_question: message,
     }),
   });
 
   if (!response.ok) {
-    throw new Error("Insight generation failed.");
+    throw new Error("Chat request failed.");
   }
 
   return response.json();
 }
-

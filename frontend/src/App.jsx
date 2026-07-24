@@ -2,11 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Landing from "./components/upload/Landing";
 import "./styles/globals.css";
 import {
-  generateMockResponse,
-} from "./services/mockApi";
-import {
   uploadDataset,
-  queryDataset,
+  chat,
 } from "./services/api";
 import Navbar from "./components/layout/Navbar";
 import ChatView from "./components/chat/ChatView";
@@ -87,14 +84,14 @@ setUploadedInfo({
   setLoading(true);
 
   try {
-    const response = await queryDataset(sessionId, q);
-    console.log(response);
+    const result = await chat(sessionId, q);
+    console.log(result);
 
     setChatHistory((prev) => [
       ...prev,
       {
         query: q,
-        response,
+        response: result.response,
       },
     ]);
   } catch (error) {
