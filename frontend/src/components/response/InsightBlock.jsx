@@ -1,3 +1,4 @@
+import ReactMarkdown from "react-markdown";
 import { Icon } from "../ui/Icons";
 
 export default function InsightBlock({
@@ -13,14 +14,11 @@ export default function InsightBlock({
         {label}
       </div>
 
-      {text
-        .split("\n")
-        .filter(Boolean)
-        .map((line, i) => (
-          <p key={i}>
-            {line.replace(/\*\*/g, "")}
-          </p>
-        ))}
+      <div className="ds-markdown">
+        <ReactMarkdown>
+          {text}
+        </ReactMarkdown>
+      </div>
     </div>
   );
 }

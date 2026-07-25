@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 
-from core.ai.insight_engine import InsightEngine
+from backend.core.ai.ai_engine import InsightEngine
 from models.insight_request import InsightRequest
 from models.query_plan import QueryPlan
 from models.response import Response

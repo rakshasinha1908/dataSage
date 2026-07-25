@@ -14,6 +14,7 @@ export default function ResponseRenderer({ response }) {
 
   const isError = !!response.error;
   const isAI = response.type === "ai";
+  const isInsight = response.type === "insight";
   const isStructured = response.type === "structured";
   const isKPI = response.type === "kpi";
 
@@ -25,7 +26,12 @@ export default function ResponseRenderer({ response }) {
     );
   }
 
-  if (!isAI && !isStructured && !isKPI) {
+  if (
+    !isAI &&
+    !isInsight &&
+    !isStructured &&
+    !isKPI 
+  ) {
     return (
       <div className="ds-response-card">
         <div className="ds-response-body">
@@ -66,12 +72,12 @@ export default function ResponseRenderer({ response }) {
           {response.title || "Result"}
         </div>
 
-        {isAI && response.insight && (
-          <InsightBlock
-            text={response.insight}
-            label="Answer"
-          />
-        )}
+        {(isAI || isInsight) && response.insight && (
+    <InsightBlock
+        text={response.insight}
+        label="AI Insight"
+    />
+)}
 
         {isKPI && (
           <>

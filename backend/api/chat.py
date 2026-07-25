@@ -1,13 +1,21 @@
 from fastapi import APIRouter
 
-from core.ai.insight_engine import InsightEngine
+from core.ai.ai_engine import AIEngine
 from core.ai.insight_request_builder import InsightRequestBuilder
+from core.ai.dataset_description_request_builder import (
+    DatasetDescriptionRequestBuilder,
+)
 from core.query_engine import QueryEngine
-
+from core.ai.prompt_builder import PromptBuilder
 from models.insight_api_request import InsightAPIRequest
 
 from storage.session_manager import SessionManager
 from models.query_context import QueryContext
+
+from core.chat_router import (
+    ChatRoute,
+    determine_route,
+)
 
 
 router = APIRouter(
@@ -24,7 +32,9 @@ def chat(request: InsightAPIRequest):
     Flow:
     1. Try deterministic analytics.
     2. If successful -> return analytics.
-    3. Otherwise -> treat as conversational follow-up.
+    3. Otherwise -> route to either:
+       - Dataset Description
+       - Insight
     """
 
     dataset = SessionManager.get(
@@ -53,6 +63,7 @@ def chat(request: InsightAPIRequest):
             query_plan=plan,
             response=response,
         )
+
         SessionManager.save_query_context(
             request.session_id,
             query_context,
@@ -65,12 +76,46 @@ def chat(request: InsightAPIRequest):
         }
 
     # -------------------------------------------------
-    # Fallback to conversational AI
+    # Analytics failed -> Decide conversation route
     # -------------------------------------------------
 
     query_context = SessionManager.get_query_context(
         request.session_id,
     )
+
+    route = determine_route(
+        question=request.follow_up_question,
+        has_latest_analysis=query_context is not None,
+    )
+
+    # -------------------------------------------------
+    # Dataset Description Route
+    # -------------------------------------------------
+
+    if route == ChatRoute.DATASET_DESCRIPTION:
+
+        prompt = DatasetDescriptionRequestBuilder.build(
+            dataset=dataset,
+            question=request.follow_up_question,
+        )
+
+        description = AIEngine().generate(
+            prompt,
+        )
+
+        return {
+            "success": True,
+            "mode": "dataset_description",
+            "response": {
+                "type": "insight",
+                "title": "Dataset Overview",
+                "insight": description,
+            },
+        }
+
+    # -------------------------------------------------
+    # Insight Route
+    # -------------------------------------------------
 
     if query_context is None:
         return {
@@ -88,7 +133,7 @@ def chat(request: InsightAPIRequest):
         }
 
     # -------------------------------------------------
-    # Ensure the stored context is explainable
+    # Ensure stored context is explainable
     # -------------------------------------------------
 
     if (
@@ -107,7 +152,7 @@ def chat(request: InsightAPIRequest):
         }
 
     # -------------------------------------------------
-    # Build AI request
+    # Generate AI Insight
     # -------------------------------------------------
 
     insight_request = InsightRequestBuilder.build(
@@ -116,14 +161,20 @@ def chat(request: InsightAPIRequest):
         response=query_context.response,
     )
 
-    insight = InsightEngine().generate(
+    prompt = PromptBuilder.build(
         insight_request,
+    )
+
+    insight = AIEngine().generate(
+        prompt,
     )
 
     return {
         "success": True,
         "mode": "insight",
         "response": {
+            "type": "insight",
+            "title": "AI Insight",
             "insight": insight,
         },
     }

@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+.ds-markdown h1,
+.ds-markdown h2,
+.ds-markdown h3 {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.ds-markdown p {
+  margin: 10px 0;
+  line-height: 1.8;
+  color: #374151;
+}
+
+.ds-markdown ul,
+.ds-markdown ol {
+  padding-left: 20px;
+  margin: 10px 0;
+}
+
+.ds-markdown strong {
+  font-weight: 700;
+}
+
+.ds-markdown em {
+  font-style: italic;
+}

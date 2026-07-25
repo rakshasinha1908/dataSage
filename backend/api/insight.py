@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException
 
 from storage.session_manager import SessionManager
-
+from core.ai.prompt_builder import PromptBuilder
 from core.ai.insight_request_builder import (
     InsightRequestBuilder,
 )
-from core.ai.insight_engine import InsightEngine
+from core.ai.ai_engine import AIEngine
 
 from models.insight_api_request import (
     InsightAPIRequest,
@@ -38,7 +38,7 @@ def generate_insight(
         response=query_context.response,
     )
 
-    engine = InsightEngine()
+    engine = AIEngine()
 
     insight = engine.generate(
         insight_request,
