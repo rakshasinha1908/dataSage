@@ -1,45 +1,30 @@
-## #001
+# Known Issues
 
-Issue
+## P0 - Analytics Reliability
 
-Analytical questions occasionally route to Dataset Description.
-
-Priority
-
-P0
-
-Status
-
-Investigating
+- [ ] Analytical queries occasionally route to Dataset Description.
+- [ ] Semantically equivalent analytical questions produce different outcomes.
+- [ ] Investigate parser normalization.
 
 ---
 
-## #002
+## P1 - Routing
 
-Issue
-
-Parser treats semantically identical questions differently.
-
-Priority
-
-P0
-
-Status
-
-Open
+- [ ] Dataset Description should only trigger for explicit dataset-understanding requests.
+- [ ] Conversational AI should not default to Dataset Overview.
 
 ---
 
-## #003
+## P1 - AI
 
-Issue
+- [ ] Improve follow-up response quality.
+- [ ] Reduce repetitive phrasing.
+- [ ] Validate responses across multiple datasets.
 
-Dataset Description responses occasionally sound repetitive.
+---
 
-Priority
+## P2 - Product
 
-P1
-
-Status
-
-Open
+- [ ] Edge case testing.
+- [ ] UI polish.
+- [ ] Loading and error states.
