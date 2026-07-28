@@ -27,6 +27,40 @@ CONNECTOR_WORDS = {
     "for",
 }
 
+FILLER_WORDS = {
+    "what",
+    "which",
+    "who",
+    "when",
+    "where",
+    "why",
+    "how",
+
+    "is",
+    "are",
+    "was",
+    "were",
+
+    "the",
+    "a",
+    "an",
+
+    "show",
+    "tell",
+    "give",
+    "display",
+
+    "me",
+    "you",
+
+    "please",
+
+    "can",
+    "could",
+    "would",
+}
+
+
 def remove_connector_words(text: str) -> str:
     """
     Removes common connector words that do not contribute
@@ -42,3 +76,20 @@ def remove_connector_words(text: str) -> str:
     ]
 
     return " ".join(words)
+
+
+def remove_filler_words(text: str) -> str:
+    """
+    Removes conversational words that do not contribute
+    to identifying the analytical target.
+    """
+
+    words = text.split()
+
+    words = [
+        word
+        for word in words
+        if word not in FILLER_WORDS
+    ]
+
+    return " ".join(words) 

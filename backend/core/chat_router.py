@@ -20,22 +20,38 @@ FOLLOW_UP_KEYWORDS = {
     "insight",
 }
 
+DESCRIPTION_KEYWORDS = {
+    "describe",
+    "description",
+    "overview",
+    "dataset",
+    "schema",
+    "columns",
+    "about this dataset",
+    "about the dataset",
+    "what is in this dataset",
+    "summarize",
+    "summary",
+}
+
 
 def determine_route(
     question: str,
     has_latest_analysis: bool,
 ) -> ChatRoute:
-    """
-    Decide what to do after deterministic analytics
-    could not answer the question.
-    """
-
-    if not has_latest_analysis:
-        return ChatRoute.DATASET_DESCRIPTION
 
     question = question.lower().strip()
 
-    if any(keyword in question for keyword in FOLLOW_UP_KEYWORDS):
+    # Explicit dataset description requests
+    if any(keyword in question for keyword in DESCRIPTION_KEYWORDS):
+        return ChatRoute.DATASET_DESCRIPTION
+
+    # Follow-up analytical questions
+    if (
+        has_latest_analysis
+        and any(keyword in question for keyword in FOLLOW_UP_KEYWORDS)
+    ):
         return ChatRoute.INSIGHT
 
+    # Fallback (temporary)
     return ChatRoute.DATASET_DESCRIPTION

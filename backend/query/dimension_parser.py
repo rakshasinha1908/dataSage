@@ -4,8 +4,8 @@ from query.column_matcher import ColumnMatcher
 from utils.text_utils import (
     normalize_text,
     remove_connector_words,
+    remove_filler_words,
 )
-
 
 class DimensionParser:
     """
@@ -77,6 +77,10 @@ class DimensionParser:
             )
 
         cleaned_text = " ".join(cleaned_text.split())
+        cleaned_text = remove_connector_words(cleaned_text)
+        
+        cleaned_text = " ".join(cleaned_text.split())
+        cleaned_text = remove_filler_words(cleaned_text)
         cleaned_text = remove_connector_words(cleaned_text)
 
         return DimensionParseResult(
