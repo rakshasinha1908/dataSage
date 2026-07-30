@@ -36,6 +36,22 @@ class AnalyticsEngine:
             print("=" * 60)
 
         # -------------------------------
+        # No matching rows
+        # -------------------------------
+        if df.empty:
+            return {
+                "success": False,
+                "error": "No records match the specified filters.",
+                "filters": [
+                    {
+                        "column": c.column,
+                        "value": c.value,
+                    }
+                    for c in plan.conditions
+                ],
+            }
+
+        # -------------------------------
         # Dataset Preview
         # -------------------------------
         if plan.operation == Operation.HEAD:
@@ -45,7 +61,6 @@ class AnalyticsEngine:
                 and plan.ranking.limit is not None
                 else 5
             )
-
             return df.head(limit).to_dict(orient="records")
 
         if plan.operation == Operation.TAIL:
@@ -55,14 +70,12 @@ class AnalyticsEngine:
                 and plan.ranking.limit is not None
                 else 5
             )
-
             return df.tail(limit).to_dict(orient="records")
 
         # -------------------------------
         # Row Retrieval
         # -------------------------------
         if plan.operation == Operation.SHOW_ROWS:
-
             total_matching_rows = len(df)
 
             if (
@@ -70,7 +83,6 @@ class AnalyticsEngine:
                 and plan.ranking.show_all
             ):
                 preview_limit = total_matching_rows
-
             elif (
                 plan.ranking is not None
                 and plan.ranking.is_explicit
@@ -79,7 +91,6 @@ class AnalyticsEngine:
                     plan.ranking.limit,
                     total_matching_rows,
                 )
-
             else:
                 preview_limit = min(
                     cls.DEFAULT_PREVIEW_ROWS,
@@ -133,6 +144,7 @@ class AnalyticsEngine:
         if (
             plan.operation == Operation.COUNT
             and plan.target_column is None
+            and not plan.dimensions
         ):
             return cls._to_python(len(df))
 
@@ -140,24 +152,29 @@ class AnalyticsEngine:
         # Grouped Analytics
         # -------------------------------
         if plan.dimensions:
-            grouped = df.groupby(
-                plan.dimensions[0].column
-            )[plan.target_column.name]
-
-            if plan.operation == Operation.MEAN:
-                result = grouped.mean()
-            elif plan.operation == Operation.SUM:
-                result = grouped.sum()
-            elif plan.operation == Operation.COUNT:
-                result = grouped.count()
-            elif plan.operation == Operation.MIN:
-                result = grouped.min()
-            elif plan.operation == Operation.MAX:
-                result = grouped.max()
-            else:
-                raise ValueError(
-                    f"Unsupported operation: {plan.operation}"
+            # COUNT doesn't require a measure column.
+            if plan.operation == Operation.COUNT:
+                result = (
+                    df.groupby(plan.dimensions[0].column)
+                    .size()
                 )
+            else:
+                grouped = df.groupby(
+                    plan.dimensions[0].column
+                )[plan.target_column.name]
+
+                if plan.operation == Operation.MEAN:
+                    result = grouped.mean()
+                elif plan.operation == Operation.SUM:
+                    result = grouped.sum()
+                elif plan.operation == Operation.MIN:
+                    result = grouped.min()
+                elif plan.operation == Operation.MAX:
+                    result = grouped.max()
+                else:
+                    raise ValueError(
+                        f"Unsupported operation: {plan.operation}"
+                    )
 
             # -------------------------------
             # Ranking
@@ -197,16 +214,12 @@ class AnalyticsEngine:
 
         if plan.operation == Operation.MEAN:
             return cls._to_python(series.mean())
-
         if plan.operation == Operation.SUM:
             return cls._to_python(series.sum())
-
         if plan.operation == Operation.COUNT:
             return cls._to_python(series.count())
-
         if plan.operation == Operation.MIN:
             return cls._to_python(series.min())
-
         if plan.operation == Operation.MAX:
             return cls._to_python(series.max())
 

@@ -18,7 +18,7 @@ class RankingAnalyticsParser:
     """
 
     PATTERN = re.compile(
-        r"^(.*?)\s+by\s+(.*)$",
+        r"^(.*?)\s+by(?:\s+(.*))?$",
         re.IGNORECASE,
     )
 
@@ -36,7 +36,11 @@ class RankingAnalyticsParser:
             )
 
         group_phrase = match.group(1).strip()
-        measure_phrase = match.group(2).strip()
+        measure_phrase = (
+            match.group(2).strip()
+            if match.group(2)
+            else ""
+        )
 
         return RankingAnalyticsParseResult(
             group_phrase=group_phrase,
