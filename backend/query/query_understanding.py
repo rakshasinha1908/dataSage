@@ -8,6 +8,9 @@ from query.ranking_parser import RankingParser
 from query.dimension_parser import DimensionParser
 from query.column_matcher import ColumnMatcher
 from query.ranking_analytics_parser import RankingAnalyticsParser
+from query.measure_resolver import MeasureResolver
+from query.measure_candidate_parser import MeasureCandidateParser
+from query.filter_value_resolver import FilterValueResolver
 
 from models.dimension import Dimension
 from models.operation import Operation
@@ -38,17 +41,13 @@ class QueryUnderstanding:
         # ----------------------------------------
         # Normalize query
         # ----------------------------------------
-
         normalized_question = QueryNormalizer.normalize(question)
-
         parsed = OperationParser.parse(normalized_question)
-
         operation = parsed["operation"]
 
         # ----------------------------------------
         # Extract conditions
         # ----------------------------------------
-
         condition_result = ConditionParser.parse(
             parsed["remaining_text"],
             schema,
@@ -57,16 +56,21 @@ class QueryUnderstanding:
         # ----------------------------------------
         # Dataset preview operations
         # ----------------------------------------
-
         if operation in (
             Operation.SHOW_ROWS,
             Operation.HEAD,
             Operation.TAIL,
         ):
-
             ranking_result = RankingParser.parse(
                 condition_result.cleaned_text,
             )
+
+            print("\n===== RANKING DEBUG =====")
+            print("Input:", condition_result.cleaned_text)
+            print("Ranking:", ranking_result.ranking)
+            print("Cleaned:", ranking_result.cleaned_text)
+            print("=========================\n")
+
             print("====================================")
             print("Preview Operation :", operation)
             print("Ranking :", ranking_result.ranking)
@@ -83,29 +87,40 @@ class QueryUnderstanding:
         # ----------------------------------------
         # Analytical operations
         # ----------------------------------------
-
         ranking_result = RankingParser.parse(
             condition_result.cleaned_text,
         )
 
-        dimensions = []
-        measure_columns = []
+        print("\n" + "=" * 60)
+        print("🔥 QUERY UNDERSTANDING")
+        print("Condition Text :", repr(condition_result.cleaned_text))
+        print("Cleaned Text   :", repr(ranking_result.cleaned_text))
+        print("Ranking        :", ranking_result.ranking)
+        print("=" * 60)
+
+        dimensions: list[Dimension] = []
+        measure_columns: list[ColumnSchema] = []
 
         if ranking_result.ranking is not None:
-
             analytics_result = RankingAnalyticsParser.parse(
                 ranking_result.cleaned_text,
             )
 
-            if analytics_result.group_phrase:
+            print("\n" + "=" * 60)
+            print("🔥 RANKING ANALYTICS")
+            print("Input          :", repr(ranking_result.cleaned_text))
+            print("Group Phrase   :", repr(analytics_result.group_phrase))
+            print("Measure Phrase :", repr(analytics_result.measure_phrase))
+            print("Cleaned Text   :", repr(analytics_result.cleaned_text))
+            print("=" * 60)
 
+            if analytics_result.group_phrase:
                 group_columns = ColumnMatcher.match(
                     analytics_result.group_phrase,
                     schema,
                 )
 
                 if group_columns:
-
                     dimensions.append(
                         Dimension(
                             column=group_columns[0].name
@@ -113,10 +128,19 @@ class QueryUnderstanding:
                     )
 
             if analytics_result.measure_phrase:
-
-                measure_columns = ColumnMatcher.match(
+                candidate_result = MeasureCandidateParser.parse(
                     analytics_result.measure_phrase,
+                )
+
+                resolved_measure, remaining_text = MeasureResolver.resolve(
+                    candidate_result,
                     schema,
+                )
+
+                measure_columns = (
+                    [resolved_measure]
+                    if resolved_measure
+                    else []
                 )
 
             if (
@@ -127,19 +151,47 @@ class QueryUnderstanding:
                 operation = Operation.SUM
 
         else:
-
-            dimension_result = DimensionParser.parse(
+            candidate_result = MeasureCandidateParser.parse(
                 ranking_result.cleaned_text,
+            )
+
+            resolved_measure, remaining_text = MeasureResolver.resolve(
+                candidate_result,
                 schema,
             )
 
-            measure_columns = ColumnMatcher.match(
-                dimension_result.cleaned_text,
+            measure_columns = (
+                [resolved_measure]
+                if resolved_measure is not None
+                else []
+            )
+
+            dimension_result = DimensionParser.parse(
+                remaining_text,
                 schema,
             )
 
             dimensions = dimension_result.dimensions
+
+            resolved_conditions, remaining_text = FilterValueResolver.resolve(
+                dimension_result.cleaned_text,
+                schema,
+            )
+
+            condition_result.conditions.extend(resolved_conditions)
             
+            print("\n" + "=" * 60)
+            print("🔥 FILTER VALUE RESOLVER")
+            print("Conditions    :", resolved_conditions)
+            print("Remaining Text:", repr(remaining_text))
+            print("=" * 60)
+
+            print("\n" + "=" * 60)
+            print("🔥 DIMENSION PARSER")
+            print("Dimensions    :", dimension_result.dimensions)
+            print("Remaining Text:", repr(dimension_result.cleaned_text))
+            print("=" * 60)
+
         print("====================================")
         print("Operation :", operation)
         print("Ranking   :", ranking_result.ranking)

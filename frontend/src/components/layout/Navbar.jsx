@@ -97,13 +97,13 @@ export default function Navbar({
               )}
             </div>
 
-            <button
+            {/* <button
               className="ds-download-btn"
               onClick={onExport}
             >
               <Icon.Download />
               Download Report
-            </button>
+            </button> */}
           </>
         )}
 

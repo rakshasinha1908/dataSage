@@ -131,6 +131,13 @@ class RankingParser:
                     )
 
         cleaned_text = " ".join(cleaned_text.split())
+        
+        print("\n" + "=" * 60)
+        print("🔥 RANKING PARSER")
+        print("Input         :", repr(text))
+        print("Cleaned Text  :", repr(cleaned_text))
+        print("Ranking       :", ranking)
+        print("=" * 60)
 
         return RankingParseResult(
             cleaned_text=cleaned_text,

@@ -55,6 +55,18 @@ def chat(request: InsightAPIRequest):
         dataset,
         request.follow_up_question,
     )
+    print("QUERY PLAN:", plan)
+    if not response.get("success"):
+        print("ANALYTICS FAILED:", response)
+        # return {
+        #     "success": False,
+        #     "analytics_error": response,
+        # }
+        return {
+            "success": False,
+            "analytics_error": response,
+            "plan": str(plan),
+        }
 
     if response.get("success"):
 

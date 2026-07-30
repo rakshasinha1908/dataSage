@@ -37,6 +37,10 @@ def generate_insight(
         query_plan=query_context.query_plan,
         response=query_context.response,
     )
+    
+    prompt = PromptBuilder.build(
+        insight_request,
+    )
 
     engine = AIEngine()
 
