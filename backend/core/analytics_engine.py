@@ -30,6 +30,11 @@ class AnalyticsEngine:
             if condition.operator == "==":
                 df = df[df[condition.column] == condition.value]
 
+            print("=" * 60)
+            print("Applied:", condition)
+            print("Rows Remaining:", len(df))
+            print("=" * 60)
+
         # -------------------------------
         # Dataset Preview
         # -------------------------------
@@ -157,9 +162,6 @@ class AnalyticsEngine:
             # -------------------------------
             # Ranking
             # -------------------------------
-
-            # If the user explicitly asked for ascending/descending,
-            # respect it. Otherwise, default to descending.
             if (
                 plan.ranking is not None
                 and plan.ranking.direction is not None
@@ -172,7 +174,6 @@ class AnalyticsEngine:
                 ascending=ascending
             )
 
-            # Apply Top-N / Bottom-N only if explicitly requested.
             if (
                 plan.ranking is not None
                 and plan.ranking.is_explicit
@@ -188,6 +189,11 @@ class AnalyticsEngine:
         # Ungrouped Analytics
         # -------------------------------
         series = df[plan.target_column.name]
+
+        print("=" * 60)
+        print("FINAL ROWS:", len(df))
+        print(df.head())
+        print("=" * 60)
 
         if plan.operation == Operation.MEAN:
             return cls._to_python(series.mean())
