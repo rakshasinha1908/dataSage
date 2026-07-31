@@ -40,17 +40,11 @@ class QueryNormalizer:
         # -------------------------------
         # Maximum
         # -------------------------------
-        "highest": "maximum",
-        "largest": "maximum",
-        "biggest": "maximum",
         "max": "maximum",
 
         # -------------------------------
         # Minimum
         # -------------------------------
-        "lowest": "minimum",
-        "smallest": "minimum",
-        "least": "minimum",
         "min": "minimum",
 
         # -------------------------------
