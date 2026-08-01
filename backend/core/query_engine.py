@@ -13,10 +13,18 @@ class QueryEngine:
 
         print("\n================ DATASET SCHEMA ================")
 
+        # for column in dataset.schema:
+        #     print(
+        #         f"{column.name} ---> "
+        #         f"{column.normalized_name} | "
+        #         f"samples={column.sample_values}"
+        #     )
         for column in dataset.schema:
             print(
                 f"{column.name} ---> "
                 f"{column.normalized_name} | "
+                f"aliases={column.aliases} | "
+                f"dtype={column.dtype} | "
                 f"samples={column.sample_values}"
             )
 

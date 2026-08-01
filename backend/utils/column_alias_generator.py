@@ -3,24 +3,35 @@ from utils.text_utils import normalize_text
 
 class ColumnAliasGenerator:
     """
-    Generates generic aliases for dataset columns.
+    Generates structural aliases directly from a column name.
+
+    The generator is intentionally dataset-agnostic.
+
+    It does not contain domain-specific words such as
+    "customer", "product", "transaction", etc.
 
     Examples
     --------
+    customer_full_name
+        -> customer full name
+        -> full name
+        -> name
+        -> names
+
     product_category
         -> product category
         -> category
         -> categories
 
-    customer_full_name
-        -> customer full name
-        -> customer name
-        -> name
-        -> names
+    favorite_cartoon
+        -> favorite cartoon
+        -> cartoon
+        -> cartoons
 
-    city
-        -> city
-        -> cities
+    subscription_status
+        -> subscription status
+        -> status
+        -> statuses
     """
 
     @classmethod
@@ -29,63 +40,73 @@ class ColumnAliasGenerator:
         normalized_name: str,
     ) -> list[str]:
 
-        normalized_name = normalize_text(normalized_name)
-
-        aliases = set()
+        normalized_name = normalize_text(
+            normalized_name
+        )
 
         words = normalized_name.split()
 
-        # Always include the normalized name itself
-        aliases.add(normalized_name)
+        if not words:
+            return []
 
-        # ----------------------------
-        # Last word
-        # ----------------------------
-
-        if words:
-            last = words[-1]
-
-            aliases.add(last)
-
-            plural = cls._pluralize(last)
-            aliases.add(plural)
-
-        # ----------------------------
-        # Drop common prefixes
-        # ----------------------------
-
-        prefixes = {
-            "customer",
-            "product",
-            "transaction",
-            "order",
-            "membership",
-            "discount",
-            "phone",
+        aliases = {
+            normalized_name,
         }
 
-        filtered = [
-            word
-            for word in words
-            if word not in prefixes
-        ]
+        # ----------------------------------------
+        # Generate progressively shorter suffixes
+        #
+        # customer full name
+        #     -> full name
+        #     -> name
+        #
+        # product category
+        #     -> category
+        #
+        # viewing time hours
+        #     -> time hours
+        #     -> hours
+        # ----------------------------------------
 
-        if filtered:
+        for start_index in range(1, len(words)):
 
-            phrase = " ".join(filtered)
+            phrase = " ".join(
+                words[start_index:]
+            )
 
-            aliases.add(phrase)
-            aliases.add(cls._pluralize(phrase))
+            if phrase:
+                aliases.add(phrase)
 
-        return sorted(alias for alias in aliases if alias)
+        # ----------------------------------------
+        # Add plural form of the final concept
+        # ----------------------------------------
+
+        last_word = words[-1]
+
+        aliases.add(last_word)
+        aliases.add(
+            cls._pluralize(last_word)
+        )
+
+        return sorted(
+            alias
+            for alias in aliases
+            if alias
+        )
 
     @staticmethod
     def _pluralize(word: str) -> str:
 
-        if word.endswith("y"):
-            return word[:-1] + "ies"
+        if word.endswith(
+            ("s", "x", "z", "ch", "sh")
+        ):
+            return word + "es"
 
-        if word.endswith("s"):
-            return word
+        if (
+            word.endswith("y")
+            and len(word) > 1
+            and word[-2] not in "aeiou"
+        ):
+            return word[:-1] + "ies"
 
         return word + "s"
