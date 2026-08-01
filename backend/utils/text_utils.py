@@ -26,6 +26,7 @@ def normalize_text(text: str) -> str:
 
     return text
 
+
 CONNECTOR_WORDS = {
     "in",
     "of",
@@ -35,7 +36,9 @@ CONNECTOR_WORDS = {
     "for",
 }
 
+
 FILLER_WORDS = {
+    # Question words
     "what",
     "which",
     "who",
@@ -44,15 +47,21 @@ FILLER_WORDS = {
     "why",
     "how",
 
+    # Auxiliary verbs
     "is",
     "are",
     "was",
     "were",
+    "do",
+    "does",
+    "did",
 
+    # Articles
     "the",
     "a",
     "an",
 
+    # Request language
     "show",
     "tell",
     "give",
@@ -60,12 +69,19 @@ FILLER_WORDS = {
 
     "me",
     "you",
- 
+
     "please",
 
+    # Modal verbs
     "can",
     "could",
     "would",
+
+    # Comparison language
+    "compare",
+    "compared",
+    "comparing",
+    "between",
 }
 
 
@@ -100,4 +116,4 @@ def remove_filler_words(text: str) -> str:
         if word not in FILLER_WORDS
     ]
 
-    return " ".join(words) 
+    return " ".join(words)

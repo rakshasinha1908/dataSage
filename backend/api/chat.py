@@ -7,7 +7,6 @@ from core.ai.dataset_description_request_builder import (
 )
 from core.query_engine import QueryEngine
 from core.ai.prompt_builder import PromptBuilder
-from models.insight_api_request import InsightAPIRequest
 
 from storage.session_manager import SessionManager
 from models.query_context import QueryContext
@@ -16,6 +15,8 @@ from core.chat_router import (
     ChatRoute,
     determine_route,
 )
+
+from models.insight_api_request import InsightAPIRequest
 
 
 router = APIRouter(
@@ -30,12 +31,17 @@ def chat(request: InsightAPIRequest):
     Unified conversational endpoint.
 
     Flow:
-    1. Try deterministic analytics.
-    2. If successful -> return analytics.
-    3. Otherwise -> route to either:
-       - Dataset Description
-       - Insight
+    1. Load the uploaded dataset.
+    2. Determine whether the request is:
+       - deterministic analytics
+       - dataset understanding
+       - contextual insight
+    3. Route to the appropriate processing layer.
     """
+
+    # -------------------------------------------------
+    # Session / dataset lookup
+    # -------------------------------------------------
 
     dataset = SessionManager.get(
         request.session_id,
@@ -44,27 +50,75 @@ def chat(request: InsightAPIRequest):
     if dataset is None:
         return {
             "success": False,
-            "message": "Session not found.",
+            "mode": "session",
+            "response": {
+                "error": "Session not found.",
+            },
         }
 
     # -------------------------------------------------
-    # Try deterministic analytics first
+    # Existing analytical context
     # -------------------------------------------------
 
-    response, plan = QueryEngine.execute(
-        dataset,
-        request.follow_up_question,
+    query_context = SessionManager.get_query_context(
+        request.session_id,
     )
-    print("QUERY PLAN:", plan)
-    if not response.get("success"):
-        print("ANALYTICS FAILED:", response)
-        return {
-            "success": False,
-            "mode": "analytics",
-            "response": response,
-        }
 
-    if response.get("success"):
+    # -------------------------------------------------
+    # Determine request route
+    # -------------------------------------------------
+
+    route = determine_route(
+        question=request.follow_up_question,
+        has_latest_analysis=query_context is not None,
+    )
+
+    print("=" * 60)
+    print("CHAT ROUTING")
+    print("=" * 60)
+    print("Question :", request.follow_up_question)
+    print("Route    :", route)
+    print(
+        "Context  :",
+        "Available"
+        if query_context is not None
+        else "None",
+    )
+    print("=" * 60)
+
+    # =================================================
+    # ANALYTICS ROUTE
+    # =================================================
+
+    if route == ChatRoute.ANALYTICS:
+
+        response, plan = QueryEngine.execute(
+            dataset,
+            request.follow_up_question,
+        )
+
+        print("QUERY PLAN:", plan)
+
+        # ---------------------------------------------
+        # Deterministic analytics failed
+        # ---------------------------------------------
+
+        if not response.get("success"):
+
+            print(
+                "ANALYTICS FAILED:",
+                response,
+            )
+
+            return {
+                "success": False,
+                "mode": "analytics",
+                "response": response,
+            }
+
+        # ---------------------------------------------
+        # Deterministic analytics succeeded
+        # ---------------------------------------------
 
         query_context = QueryContext(
             question=request.follow_up_question,
@@ -83,22 +137,9 @@ def chat(request: InsightAPIRequest):
             "response": response,
         }
 
-    # -------------------------------------------------
-    # Analytics failed -> Decide conversation route
-    # -------------------------------------------------
-
-    query_context = SessionManager.get_query_context(
-        request.session_id,
-    )
-
-    route = determine_route(
-        question=request.follow_up_question,
-        has_latest_analysis=query_context is not None,
-    )
-
-    # -------------------------------------------------
-    # Dataset Description Route
-    # -------------------------------------------------
+    # =================================================
+    # DATASET DESCRIPTION ROUTE
+    # =================================================
 
     if route == ChatRoute.DATASET_DESCRIPTION:
 
@@ -121,68 +162,72 @@ def chat(request: InsightAPIRequest):
             },
         }
 
-    # -------------------------------------------------
-    # Insight Route
-    # -------------------------------------------------
+    # =================================================
+    # INSIGHT ROUTE
+    # =================================================
 
-    if query_context is None:
+    if route == ChatRoute.INSIGHT:
+
+        # ---------------------------------------------
+        # Defensive context check
+        # ---------------------------------------------
+
+        if (
+            query_context is None
+            or query_context.query_plan is None
+            or query_context.response is None
+        ):
+            return {
+                "success": False,
+                "mode": "insight",
+                "response": {
+                    "error": (
+                        "I don't have an analytical result "
+                        "to explain yet. Please run an "
+                        "analytical query first."
+                    ),
+                },
+            }
+
+        # ---------------------------------------------
+        # Build insight request from verified result
+        # ---------------------------------------------
+
+        insight_request = InsightRequestBuilder.build(
+            question=request.follow_up_question,
+            query_plan=query_context.query_plan,
+            response=query_context.response,
+        )
+
+        prompt = PromptBuilder.build(
+            insight_request,
+        )
+
+        insight = AIEngine().generate(
+            prompt,
+        )
+
         return {
-            "success": False,
+            "success": True,
             "mode": "insight",
             "response": {
-                "message": (
-                    "I don't have an analytical result to explain yet. "
-                    "Please run an analytical query first (for example, "
-                    "'Average transaction amount by city') and then ask "
-                    "follow-up questions like 'Why?' or "
-                    "'How could this be improved?'."
-                )
+                "type": "insight",
+                "title": "AI Insight",
+                "insight": insight,
             },
         }
 
-    # -------------------------------------------------
-    # Ensure stored context is explainable
-    # -------------------------------------------------
-
-    if (
-        query_context.query_plan is None
-        or query_context.response is None
-    ):
-        return {
-            "success": False,
-            "mode": "insight",
-            "response": {
-                "message": (
-                    "I don't have an analytical result to explain. "
-                    "Please ask an analytical question first."
-                )
-            },
-        }
-
-    # -------------------------------------------------
-    # Generate AI Insight
-    # -------------------------------------------------
-
-    insight_request = InsightRequestBuilder.build(
-        question=request.follow_up_question,
-        query_plan=query_context.query_plan,
-        response=query_context.response,
-    )
-
-    prompt = PromptBuilder.build(
-        insight_request,
-    )
-
-    insight = AIEngine().generate(
-        prompt,
-    )
+    # =================================================
+    # Defensive fallback
+    # =================================================
 
     return {
-        "success": True,
-        "mode": "insight",
+        "success": False,
+        "mode": "routing",
         "response": {
-            "type": "insight",
-            "title": "AI Insight",
-            "insight": insight,
+            "error": (
+                "I couldn't determine how to process "
+                "that request."
+            ),
         },
     }

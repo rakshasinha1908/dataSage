@@ -10,35 +10,71 @@ import {
   CartesianGrid,
 } from "recharts";
 
+
 function CustomTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const value = payload[0]?.value;
 
   return (
     <div className="custom-tooltip">
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>
-        {label}
+      <div
+        style={{
+          fontWeight: 600,
+          marginBottom: 4,
+        }}
+      >
+        {String(label)}
       </div>
 
       <div style={{ color: "#7C3AED" }}>
-        {typeof payload[0].value === "number"
-          ? payload[0].value.toLocaleString()
-          : payload[0].value}
+        {typeof value === "number"
+          ? value.toLocaleString()
+          : value}
       </div>
     </div>
   );
 }
 
+
 export default function ChartBlock({
   chart,
   rows,
-}) {  if (!chart || !Array.isArray(rows) || rows.length === 0) {
-  return null;
-}
+}) {
+  if (
+    !chart
+    || !Array.isArray(rows)
+    || rows.length === 0
+  ) {
+    return null;
+  }
 
-  const data = rows.map((row) => ({
-  name: row.label,
-  value: row.value,
-}));
+  // -----------------------------------------
+  // Normalize backend rows for Recharts.
+  //
+  // Backend labels may legitimately be:
+  // strings, booleans, numbers, etc.
+  //
+  // Recharts receives a stable string label
+  // and a real finite numeric value.
+  // -----------------------------------------
+
+  const data = rows
+    .map((row) => {
+      const numericValue = Number(row.value);
+
+      return {
+        name: String(row.label),
+        value: numericValue,
+      };
+    })
+    .filter((row) => Number.isFinite(row.value));
+
+  if (data.length === 0) {
+    return null;
+  }
 
   return (
     <div className="ds-chart-area">
@@ -52,7 +88,10 @@ export default function ChartBlock({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer
+        width="100%"
+        height={220}
+      >
         {chart.chart_type === "line" ? (
           <AreaChart data={data}>
             <defs>
@@ -68,6 +107,7 @@ export default function ChartBlock({
                   stopColor="#7C3AED"
                   stopOpacity={0.15}
                 />
+
                 <stop
                   offset="95%"
                   stopColor="#7C3AED"
@@ -83,14 +123,22 @@ export default function ChartBlock({
 
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 11, fill: "#9CA3AF" }}
+              tick={{
+                fontSize: 11,
+                fill: "#9CA3AF",
+              }}
             />
 
             <YAxis
-              tick={{ fontSize: 11, fill: "#9CA3AF" }}
+              tick={{
+                fontSize: 11,
+                fill: "#9CA3AF",
+              }}
             />
 
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip
+              content={<CustomTooltip />}
+            />
 
             <Area
               type="monotone"
@@ -114,14 +162,22 @@ export default function ChartBlock({
 
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 11, fill: "#9CA3AF" }}
+              tick={{
+                fontSize: 11,
+                fill: "#9CA3AF",
+              }}
             />
 
             <YAxis
-              tick={{ fontSize: 11, fill: "#9CA3AF" }}
+              tick={{
+                fontSize: 11,
+                fill: "#9CA3AF",
+              }}
             />
 
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip
+              content={<CustomTooltip />}
+            />
 
             <Bar
               dataKey="value"

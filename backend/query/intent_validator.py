@@ -8,6 +8,10 @@ from models.operation import Operation
 class IntentValidator:
     """
     Validates whether a parsed query can be executed safely.
+
+    Validation is intentionally conservative:
+    if meaningful query text remains unresolved, DataSage
+    should fail rather than silently execute a different query.
     """
 
     # -------------------------------
@@ -36,10 +40,6 @@ class IntentValidator:
     # -------------------------------
     # Filter syntax that should have been
     # consumed during query understanding.
-    #
-    # If it remains afterward, the user likely
-    # attempted a filter that DataSage could not
-    # resolve safely.
     # -------------------------------
     UNRESOLVED_FILTER_PATTERN = re.compile(
         r"""
@@ -63,16 +63,29 @@ class IntentValidator:
     )
 
     @classmethod
+    def _clean_unresolved_text(
+        cls,
+        unresolved_text: str,
+    ) -> str:
+        """
+        Normalize unresolved text before validation.
+        """
+
+        if not unresolved_text:
+            return ""
+
+        return " ".join(
+            unresolved_text.lower().split()
+        )
+
+    @classmethod
     def _has_unresolved_filter(
         cls,
         unresolved_text: str,
     ) -> bool:
         """
-        Return True when unresolved text still contains
+        Returns True when unresolved text still contains
         recognizable filter/comparison syntax.
-
-        Harmless residual words such as "patients" or
-        "records" are not treated as errors.
         """
 
         if not unresolved_text:
@@ -92,9 +105,14 @@ class IntentValidator:
         unresolved_text: str = "",
     ) -> ValidationResult:
 
-        # -------------------------------
-        # Unresolved filter validation
-        # -------------------------------
+        unresolved_text = cls._clean_unresolved_text(
+            unresolved_text
+        )
+
+        # =================================================
+        # Unresolved filter syntax
+        # =================================================
+
         if cls._has_unresolved_filter(
             unresolved_text
         ):
@@ -107,16 +125,37 @@ class IntentValidator:
                 ),
             )
 
-        # -------------------------------
-        # Dataset Operations
-        # -------------------------------
-        if operation in cls.DATASET_OPERATIONS:
+        # =================================================
+        # COUNT
+        # =================================================
+        #
+        # COUNT is especially dangerous because executing
+        # it with ignored text silently returns the total
+        # number of rows.
+        #
+        # Example:
+        #
+        #     count female customers
+        #
+        # If "female" cannot be resolved, executing COUNT
+        # would incorrectly return the full dataset size.
+        #
+        # Therefore unresolved text is not allowed here.
+        # =================================================
 
-            # COUNT can optionally work on a column
-            if (
-                operation == Operation.COUNT
-                and matched_columns
-            ):
+        if operation == Operation.COUNT:
+
+            if unresolved_text:
+                return ValidationResult(
+                    success=False,
+                    error=(
+                        "I couldn't understand part of the "
+                        "request. Please check the column name "
+                        "or filter value."
+                    ),
+                )
+
+            if matched_columns:
                 return ValidationResult(
                     success=True,
                     column=matched_columns[0],
@@ -126,9 +165,19 @@ class IntentValidator:
                 success=True
             )
 
-        # -------------------------------
-        # Column Operations
-        # -------------------------------
+        # =================================================
+        # Other dataset operations
+        # =================================================
+
+        if operation in cls.DATASET_OPERATIONS:
+            return ValidationResult(
+                success=True
+            )
+
+        # =================================================
+        # Column operations
+        # =================================================
+
         if operation in cls.COLUMN_OPERATIONS:
 
             if not matched_columns:
@@ -159,9 +208,10 @@ class IntentValidator:
                 column=column,
             )
 
-        # -------------------------------
+        # =================================================
         # Default
-        # -------------------------------
+        # =================================================
+
         if not matched_columns:
             return ValidationResult(
                 success=False,

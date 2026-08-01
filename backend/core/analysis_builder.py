@@ -25,23 +25,71 @@ class AnalysisBuilder:
 
         operation = cls.OPERATION_NAMES.get(
             plan.operation,
-            plan.operation.title(),
+            str(plan.operation).title(),
         )
 
-        lines.append(
-            f"{operation} {plan.target_column.normalized_name.title()}"
-        )
+        # -----------------------------------
+        # Analytical operation
+        # -----------------------------------
 
-        if plan.dimensions:
+        if plan.target_column is not None:
+
             lines.append(
-                f"Grouped by {plan.dimensions[0].column.replace('_', ' ').title()}"
+                f"{operation} "
+                f"{plan.target_column.normalized_name.title()}"
             )
 
+        elif plan.operation == "count":
+
+            # COUNT can operate on rows without
+            # requiring a target column.
+            lines.append("Count of rows")
+
+        else:
+
+            lines.append(operation)
+
+        # -----------------------------------
+        # Grouping dimensions
+        # -----------------------------------
+
+        if plan.dimensions:
+
+            dimension_names = [
+                dimension.column
+                .replace("_", " ")
+                .title()
+                for dimension in plan.dimensions
+            ]
+
+            lines.append(
+                f"Grouped by {', '.join(dimension_names)}"
+            )
+
+        # -----------------------------------
+        # Filters
+        # -----------------------------------
+
         if plan.conditions:
+
             for condition in plan.conditions:
-                lines.append(
-                    f"Filtered where {condition.column.replace('_', ' ').title()} = {condition.value}"
+
+                column_name = (
+                    condition.column
+                    .replace("_", " ")
+                    .title()
                 )
+
+                lines.append(
+                    f"Filtered where "
+                    f"{column_name} "
+                    f"{condition.operator} "
+                    f"{condition.value}"
+                )
+
+        # -----------------------------------
+        # Ranking
+        # -----------------------------------
 
         if plan.ranking:
 
