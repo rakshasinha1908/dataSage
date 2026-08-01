@@ -4,6 +4,9 @@ import re
 def normalize_text(text: str) -> str:
     """
     Normalize text for deterministic comparison.
+
+    Preserves numeric comparison operators:
+        >  <  >=  <=  =
     """
 
     text = text.lower()
@@ -12,7 +15,12 @@ def normalize_text(text: str) -> str:
 
     text = text.replace("-", " ")
 
-    text = re.sub(r"[^\w\s]", "", text)
+    # Remove punctuation, but preserve comparison operators
+    # required by NumericFilterParser.
+    text = re.sub(r"[^\w\s><=]", "", text)
+
+    # Normalize spacing around comparison operators.
+    text = re.sub(r"\s*(>=|<=|>|<|=)\s*", r" \1 ", text)
 
     text = " ".join(text.split())
 

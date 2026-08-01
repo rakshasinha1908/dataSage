@@ -83,7 +83,7 @@ class ConditionParser:
         candidates.sort(reverse=True, key=lambda x: x[0])
 
         # -------------------------------------------------
-        # Extract conditions
+        # Extract categorical / boolean conditions
         # -------------------------------------------------
         for _, column, original_value, normalized_value in candidates:
 

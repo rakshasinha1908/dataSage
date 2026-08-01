@@ -78,8 +78,8 @@ class QueryNormalizer:
 
         question = question.lower().strip()
 
-        # Remove punctuation except underscores
-        question = re.sub(r"[^\w\s]", " ", question)
+        # Remove punctuation, but preserve numeric comparison operators
+        question = re.sub(r"[^\w\s<>=]", " ", question)
 
         # Replace longest phrases first
         replacements = sorted(

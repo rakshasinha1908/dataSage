@@ -11,6 +11,7 @@ from query.ranking_analytics_parser import RankingAnalyticsParser
 from query.measure_resolver import MeasureResolver
 from query.measure_candidate_parser import MeasureCandidateParser
 from query.filter_value_resolver import FilterValueResolver
+from query.numeric_filter_parser import NumericFilterParser
 
 from models.dimension import Dimension
 from models.operation import Operation
@@ -44,6 +45,12 @@ class QueryUnderstanding:
         normalized_question = QueryNormalizer.normalize(question)
         parsed = OperationParser.parse(normalized_question)
         operation = parsed["operation"]
+        
+        print("\n" + "=" * 60)
+        print("🔥 AFTER OPERATION PARSER")
+        print("Operation       :", operation)
+        print("Remaining Text  :", repr(parsed["remaining_text"]))
+        print("=" * 60)
 
         # ----------------------------------------
         # Extract conditions
@@ -52,6 +59,12 @@ class QueryUnderstanding:
             parsed["remaining_text"],
             schema,
         )
+        
+        print("\n" + "=" * 60)
+        print("🔥 AFTER CONDITION PARSER")
+        print("Conditions      :", condition_result.conditions)
+        print("Cleaned Text    :", repr(condition_result.cleaned_text))
+        print("=" * 60)
 
         # ----------------------------------------
         # Dataset preview operations
@@ -179,7 +192,7 @@ class QueryUnderstanding:
             )
 
             condition_result.conditions.extend(resolved_conditions)
-            
+
             print("\n" + "=" * 60)
             print("🔥 FILTER VALUE RESOLVER")
             print("Conditions    :", resolved_conditions)
@@ -190,6 +203,26 @@ class QueryUnderstanding:
             print("🔥 DIMENSION PARSER")
             print("Dimensions    :", dimension_result.dimensions)
             print("Remaining Text:", repr(dimension_result.cleaned_text))
+            print("=" * 60)
+
+            # ----------------------------------------
+            # NEW: Numeric filter parsing
+            # ----------------------------------------
+            numeric_result = NumericFilterParser.parse(
+                remaining_text,
+                schema,
+            )
+
+            condition_result.conditions.extend(
+                numeric_result.conditions
+            )
+
+            remaining_text = numeric_result.cleaned_text
+
+            print("\n" + "=" * 60)
+            print("🔥 NUMERIC FILTER PARSER")
+            print("Conditions    :", numeric_result.conditions)
+            print("Remaining Text:", repr(remaining_text))
             print("=" * 60)
 
         print("====================================")

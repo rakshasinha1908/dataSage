@@ -27,8 +27,26 @@ class AnalyticsEngine:
         # Apply conditions
         # -------------------------------
         for condition in plan.conditions:
+
             if condition.operator == "==":
                 df = df[df[condition.column] == condition.value]
+
+            elif condition.operator == ">":
+                df = df[df[condition.column] > condition.value]
+
+            elif condition.operator == ">=":
+                df = df[df[condition.column] >= condition.value]
+
+            elif condition.operator == "<":
+                df = df[df[condition.column] < condition.value]
+
+            elif condition.operator == "<=":
+                df = df[df[condition.column] <= condition.value]
+
+            else:
+                raise ValueError(
+                    f"Unsupported operator: {condition.operator}"
+                )
 
             print("=" * 60)
             print("Applied:", condition)

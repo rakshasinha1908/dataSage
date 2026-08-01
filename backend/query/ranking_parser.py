@@ -40,7 +40,7 @@ class RankingParser:
         r"top|bottom|"
         r"highest|lowest|"
         r"largest|smallest|"
-        r"biggest|least|"
+        r"biggest|(?<!at )least|"
         r"best|worst"
         r")\b",
         re.IGNORECASE,

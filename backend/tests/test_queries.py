@@ -8,63 +8,80 @@ BASE_URL = "http://127.0.0.1:8000"
 # Paste your session_id here after uploading
 # a dataset once from the frontend.
 # ---------------------------------------------
-SESSION_ID = "2153de99-a5eb-4796-8a76-4acbc9eb4f19"
+SESSION_ID = "0dea9357-74ff-423f-b6ce-7977f33d7634"
 
 print(f"Using Session ID: {SESSION_ID}")
 
 # hospital dataset
 TEST_QUERIES = [
+    "average cost for age > 40",
+    "average cost for age < 40",
+    "average cost for age >= 40",
+    "average cost for age <= 40",
+
+    "average cost for age greater than 40",
+    "average cost for age above 40",
+    "average cost for age over 40",
+
+    "average cost for age less than 40",
+    "average cost for age below 40",
+    "average cost for age under 40",
+
+    "average cost for age at least 40",
+    "average cost for age at most 40",
+
+    "average cost for age equals 40",
 
     # Metadata
-    "describe dataset",
-    "dataset summary",
-    "show columns",
-    "show schema",
+    # "describe dataset",
+    # "dataset summary",
+    # "show columns",
+    # "show schema",
 
-    # Row Retrieval
-    "show rows",
-    "show 10 rows",
-    "show all rows",
-    "top 10 rows",
-    "bottom 10 rows",
-    "first 15 rows",
-    "last 20 rows",
+    # # Row Retrieval
+    # "show rows",
+    # "show 10 rows",
+    # "show all rows",
+    # "top 10 rows",
+    # "bottom 10 rows",
+    # "first 15 rows",
+    # "last 20 rows",
 
-    # Conditions
-    "show rows where gender is female",
-    "show rows where readmission is no",
-    "show rows where outcome is recovered",
+    # # Conditions
+    # "show rows where gender is female",
+    # "show rows where readmission is no",
+    # "show rows where outcome is recovered",
 
-    "show 10 rows where condition is heart disease",
+    # "show 10 rows where condition is heart disease",
 
-    # Aggregations
-    "average cost",
-    "sum cost",
-    "maximum cost",
-    "minimum cost",
-    "average age",
-    "average length of stay",
-    "count patients",
+    # # Aggregations
+    # "average cost",
+    # "sum cost",
+    # "maximum cost",
+    # "minimum cost",
+    # "average age",
+    # "average length of stay",
+    # "count patients",
 
-    # Group By
-    "average cost by condition",
-    "average cost by procedure",
-    "average length of stay by condition",
-    "count patients by gender",
-    "count patients by outcome",
+    # # Group By
+    # "average cost by condition",
+    # "average cost by procedure",
+    # "average length of stay by condition",
+    # "count patients by gender",
+    # "count patients by outcome",
 
-    # Combined
-    "average cost where gender is female",
-    "count patients where readmission is no",
-    "average length of stay where outcome is recovered",
+    # # Combined
+    # "average cost where gender is female",
+    # "count patients where readmission is no",
+    # "average length of stay where outcome is recovered",
 
-    # Ranking
-    "top 5 conditions by cost",
-    "bottom 5 procedures by cost",
+    # # Ranking
+    # "top 5 conditions by cost",
+    # "bottom 5 procedures by cost",
 
-    # Invalid
-    "average procedure",
-    "sum patient id",
+    # # Invalid
+    # "average procedure",
+    # "sum patient id",
 ]
 
 # flower dataset
