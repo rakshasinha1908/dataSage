@@ -28,10 +28,6 @@ class OperationParser:
     @classmethod
     def parse(cls, question: str) -> dict:
 
-        print("\n" + "=" * 60)
-        print("🔥 OPERATION PARSER IS RUNNING")
-        print("INPUT:", repr(question))
-        print("=" * 60)
 
         normalized_question = question.lower().strip()
 

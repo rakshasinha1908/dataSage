@@ -32,6 +32,51 @@ class QueryUnderstanding:
     - Construct and return a QueryPlan
     """
 
+    @staticmethod
+    def _print_debug_summary(
+        question: str,
+        normalized_question: str,
+        operation,
+        target_column,
+        dimensions,
+        conditions,
+        ranking,
+    ):
+        """
+        Prints one compact summary of the final query understanding.
+
+        Individual parsers should remain mostly silent so terminal
+        output stays readable during debugging.
+        """
+
+        print("\n" + "=" * 60)
+        print("QUERY UNDERSTANDING")
+        print("=" * 60)
+
+        print("Question      :", question)
+        print("Normalized    :", normalized_question)
+        print("Operation     :", operation)
+
+        print(
+            "Target Column :",
+            target_column.name
+            if target_column is not None
+            else None,
+        )
+
+        print(
+            "Dimensions    :",
+            [
+                dimension.column
+                for dimension in dimensions
+            ],
+        )
+
+        print("Conditions    :", conditions)
+        print("Ranking       :", ranking)
+
+        print("=" * 60)
+
     @classmethod
     def parse(
         cls,
@@ -42,29 +87,23 @@ class QueryUnderstanding:
         # ----------------------------------------
         # Normalize query
         # ----------------------------------------
-        normalized_question = QueryNormalizer.normalize(question)
-        parsed = OperationParser.parse(normalized_question)
+        normalized_question = QueryNormalizer.normalize(
+            question
+        )
+
+        parsed = OperationParser.parse(
+            normalized_question
+        )
+
         operation = parsed["operation"]
-        
-        print("\n" + "=" * 60)
-        print("🔥 AFTER OPERATION PARSER")
-        print("Operation       :", operation)
-        print("Remaining Text  :", repr(parsed["remaining_text"]))
-        print("=" * 60)
 
         # ----------------------------------------
-        # Extract conditions
+        # Extract categorical / boolean conditions
         # ----------------------------------------
         condition_result = ConditionParser.parse(
             parsed["remaining_text"],
             schema,
         )
-        
-        print("\n" + "=" * 60)
-        print("🔥 AFTER CONDITION PARSER")
-        print("Conditions      :", condition_result.conditions)
-        print("Cleaned Text    :", repr(condition_result.cleaned_text))
-        print("=" * 60)
 
         # ----------------------------------------
         # Dataset preview operations
@@ -78,16 +117,15 @@ class QueryUnderstanding:
                 condition_result.cleaned_text,
             )
 
-            print("\n===== RANKING DEBUG =====")
-            print("Input:", condition_result.cleaned_text)
-            print("Ranking:", ranking_result.ranking)
-            print("Cleaned:", ranking_result.cleaned_text)
-            print("=========================\n")
-
-            print("====================================")
-            print("Preview Operation :", operation)
-            print("Ranking :", ranking_result.ranking)
-            print("====================================")
+            cls._print_debug_summary(
+                question=question,
+                normalized_question=normalized_question,
+                operation=operation,
+                target_column=None,
+                dimensions=[],
+                conditions=condition_result.conditions,
+                ranking=ranking_result.ranking,
+            )
 
             return QueryPlan(
                 operation=operation,
@@ -104,30 +142,23 @@ class QueryUnderstanding:
             condition_result.cleaned_text,
         )
 
-        print("\n" + "=" * 60)
-        print("🔥 QUERY UNDERSTANDING")
-        print("Condition Text :", repr(condition_result.cleaned_text))
-        print("Cleaned Text   :", repr(ranking_result.cleaned_text))
-        print("Ranking        :", ranking_result.ranking)
-        print("=" * 60)
-
         dimensions: list[Dimension] = []
         measure_columns: list[ColumnSchema] = []
 
+        # ----------------------------------------
+        # Ranking analytics
+        # ----------------------------------------
         if ranking_result.ranking is not None:
+
             analytics_result = RankingAnalyticsParser.parse(
                 ranking_result.cleaned_text,
             )
 
-            print("\n" + "=" * 60)
-            print("🔥 RANKING ANALYTICS")
-            print("Input          :", repr(ranking_result.cleaned_text))
-            print("Group Phrase   :", repr(analytics_result.group_phrase))
-            print("Measure Phrase :", repr(analytics_result.measure_phrase))
-            print("Cleaned Text   :", repr(analytics_result.cleaned_text))
-            print("=" * 60)
-
+            # ------------------------------------
+            # Resolve grouping dimension
+            # ------------------------------------
             if analytics_result.group_phrase:
+
                 group_columns = ColumnMatcher.match(
                     analytics_result.group_phrase,
                     schema,
@@ -140,22 +171,33 @@ class QueryUnderstanding:
                         )
                     )
 
+            # ------------------------------------
+            # Resolve ranking measure
+            # ------------------------------------
             if analytics_result.measure_phrase:
-                candidate_result = MeasureCandidateParser.parse(
-                    analytics_result.measure_phrase,
+
+                candidate_result = (
+                    MeasureCandidateParser.parse(
+                        analytics_result.measure_phrase,
+                    )
                 )
 
-                resolved_measure, remaining_text = MeasureResolver.resolve(
-                    candidate_result,
-                    schema,
+                resolved_measure, remaining_text = (
+                    MeasureResolver.resolve(
+                        candidate_result,
+                        schema,
+                    )
                 )
 
                 measure_columns = (
                     [resolved_measure]
-                    if resolved_measure
+                    if resolved_measure is not None
                     else []
                 )
 
+            # ------------------------------------
+            # Infer SUM for numeric ranking measure
+            # ------------------------------------
             if (
                 operation is None
                 and measure_columns
@@ -163,14 +205,23 @@ class QueryUnderstanding:
             ):
                 operation = Operation.SUM
 
+        # ----------------------------------------
+        # Non-ranking analytics
+        # ----------------------------------------
         else:
+
+            # ------------------------------------
+            # Resolve analytical measure
+            # ------------------------------------
             candidate_result = MeasureCandidateParser.parse(
                 ranking_result.cleaned_text,
             )
 
-            resolved_measure, remaining_text = MeasureResolver.resolve(
-                candidate_result,
-                schema,
+            resolved_measure, remaining_text = (
+                MeasureResolver.resolve(
+                    candidate_result,
+                    schema,
+                )
             )
 
             measure_columns = (
@@ -179,6 +230,9 @@ class QueryUnderstanding:
                 else []
             )
 
+            # ------------------------------------
+            # Resolve dimensions
+            # ------------------------------------
             dimension_result = DimensionParser.parse(
                 remaining_text,
                 schema,
@@ -186,28 +240,23 @@ class QueryUnderstanding:
 
             dimensions = dimension_result.dimensions
 
-            resolved_conditions, remaining_text = FilterValueResolver.resolve(
-                dimension_result.cleaned_text,
-                schema,
+            # ------------------------------------
+            # Resolve categorical / value filters
+            # ------------------------------------
+            resolved_conditions, remaining_text = (
+                FilterValueResolver.resolve(
+                    dimension_result.cleaned_text,
+                    schema,
+                )
             )
 
-            condition_result.conditions.extend(resolved_conditions)
+            condition_result.conditions.extend(
+                resolved_conditions
+            )
 
-            print("\n" + "=" * 60)
-            print("🔥 FILTER VALUE RESOLVER")
-            print("Conditions    :", resolved_conditions)
-            print("Remaining Text:", repr(remaining_text))
-            print("=" * 60)
-
-            print("\n" + "=" * 60)
-            print("🔥 DIMENSION PARSER")
-            print("Dimensions    :", dimension_result.dimensions)
-            print("Remaining Text:", repr(dimension_result.cleaned_text))
-            print("=" * 60)
-
-            # ----------------------------------------
-            # NEW: Numeric filter parsing
-            # ----------------------------------------
+            # ------------------------------------
+            # Resolve numeric filters
+            # ------------------------------------
             numeric_result = NumericFilterParser.parse(
                 remaining_text,
                 schema,
@@ -219,20 +268,33 @@ class QueryUnderstanding:
 
             remaining_text = numeric_result.cleaned_text
 
-            print("\n" + "=" * 60)
-            print("🔥 NUMERIC FILTER PARSER")
-            print("Conditions    :", numeric_result.conditions)
-            print("Remaining Text:", repr(remaining_text))
-            print("=" * 60)
+        # ----------------------------------------
+        # Finalize query plan
+        # ----------------------------------------
+        final_operation = operation or Operation.SUM
 
-        print("====================================")
-        print("Operation :", operation)
-        print("Ranking   :", ranking_result.ranking)
-        print("====================================")
+        target_column = (
+            measure_columns[0]
+            if measure_columns
+            else None
+        )
+
+        # ----------------------------------------
+        # Compact debug summary
+        # ----------------------------------------
+        cls._print_debug_summary(
+            question=question,
+            normalized_question=normalized_question,
+            operation=final_operation,
+            target_column=target_column,
+            dimensions=dimensions,
+            conditions=condition_result.conditions,
+            ranking=ranking_result.ranking,
+        )
 
         return QueryPlan(
-            operation=operation or Operation.SUM,
-            target_column=measure_columns[0] if measure_columns else None,
+            operation=final_operation,
+            target_column=target_column,
             dimensions=dimensions,
             conditions=condition_result.conditions,
             ranking=ranking_result.ranking,

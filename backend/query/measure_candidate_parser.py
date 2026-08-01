@@ -44,18 +44,6 @@ class MeasureCandidateParser:
                 )
             )
 
-        print("\n" + "=" * 60)
-        print("🔥 MEASURE CANDIDATE PARSER")
-        print("Input:", repr(text))
-        print()
-
-        for c in candidates:
-            print(
-                f"Measure: {c.measure_phrase!r:<30}"
-                f" Remaining: {c.remaining_text!r}"
-            )
-
-        print("=" * 60)
 
         return MeasureCandidateResult(
             candidates=candidates
