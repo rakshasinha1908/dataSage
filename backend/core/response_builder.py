@@ -12,6 +12,15 @@ class ResponseBuilder:
     def build(plan, result, visualization):
 
         # -----------------------------------
+        # Analytical failure
+        # -----------------------------------
+        if (
+            isinstance(result, dict)
+            and result.get("success") is False
+        ):
+            return result
+
+        # -----------------------------------
         # SHOW_ROWS
         # -----------------------------------
         if plan.operation == Operation.SHOW_ROWS:

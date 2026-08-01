@@ -53,13 +53,6 @@ FOLLOW_UP_KEYWORDS = {
 
 # -------------------------------------------------
 # Context-reference language
-#
-# These words often refer back to the latest
-# analytical result.
-#
-# They are NOT enough by themselves to trigger
-# insight routing. They are used together with
-# follow-up intent.
 # -------------------------------------------------
 
 CONTEXT_REFERENCE_WORDS = {
@@ -77,9 +70,6 @@ CONTEXT_REFERENCE_WORDS = {
 
 # -------------------------------------------------
 # Common contextual follow-up phrases
-#
-# These represent analytical interpretation rather
-# than requests for a new deterministic calculation.
 # -------------------------------------------------
 
 FOLLOW_UP_PHRASES = {
@@ -104,18 +94,40 @@ FOLLOW_UP_PHRASES = {
 
 
 # -------------------------------------------------
+# Deterministic metadata language
+#
+# These questions ask for facts already known by
+# the schema / analytics layer. They should NOT
+# require AI.
+# -------------------------------------------------
+
+METADATA_PHRASES = {
+    "show columns",
+    "list columns",
+    "display columns",
+    "what are the columns",
+    "what columns are in this dataset",
+    "what columns are in the dataset",
+    "show schema",
+    "display schema",
+    "list schema",
+    "what is the schema",
+}
+
+
+# -------------------------------------------------
 # Dataset understanding language
+#
+# These are genuinely conversational requests.
+# AI can explain or summarize the dataset rather
+# than merely returning deterministic metadata.
 # -------------------------------------------------
 
 DESCRIPTION_KEYWORDS = {
     "describe",
     "description",
     "overview",
-    "dataset",
-    "schema",
-    "columns",
     "summarize",
-    "summary",
 }
 
 
@@ -146,17 +158,20 @@ def determine_route(
 
     Routing principles
     ------------------
-    1. Explicit dataset-understanding requests go
-       to the AI dataset-description layer.
+    1. Deterministic metadata requests remain in the
+       analytics engine.
 
-    2. Contextual interpretation / explanation goes
+    2. Dataset understanding / exploration requests
+       go to the AI dataset-description layer.
+
+    3. Contextual interpretation / explanation goes
        to the AI insight layer only when a verified
        analytical result exists.
 
-    3. Requests for new calculations remain in the
+    4. Requests for new calculations remain in the
        deterministic analytics engine.
 
-    4. Unknown questions are never silently handed
+    5. Unknown questions are never silently handed
        to the AI layer.
     """
 
@@ -169,7 +184,31 @@ def determine_route(
     )
 
     # -------------------------------------------------
+    # Deterministic metadata
+    #
+    # IMPORTANT:
+    # Check this BEFORE dataset-description routing.
+    #
+    # Examples:
+    #   show columns
+    #   what are the columns?
+    #   show schema
+    # -------------------------------------------------
+
+    if any(
+        phrase in normalized_question
+        for phrase in METADATA_PHRASES
+    ):
+        return ChatRoute.ANALYTICS
+
+    # -------------------------------------------------
     # Dataset description / exploration
+    #
+    # Examples:
+    #   describe this dataset
+    #   summarize this dataset
+    #   what information does this dataset contain?
+    #   what can I analyze?
     # -------------------------------------------------
 
     if (
@@ -214,11 +253,6 @@ def determine_route(
 
     # -------------------------------------------------
     # Context reference + interpretive language
-    #
-    # This is intentionally conservative.
-    #
-    # Merely saying "this" or "it" does not make a
-    # question an AI follow-up.
     # -------------------------------------------------
 
     has_context_reference = any(
