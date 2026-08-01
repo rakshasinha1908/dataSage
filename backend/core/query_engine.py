@@ -15,7 +15,9 @@ class QueryEngine:
 
         for column in dataset.schema:
             print(
-                f"{column.name} ---> {column.normalized_name} | samples={column.sample_values}"
+                f"{column.name} ---> "
+                f"{column.normalized_name} | "
+                f"samples={column.sample_values}"
             )
 
         print("===============================================\n")
@@ -28,6 +30,7 @@ class QueryEngine:
         validation = IntentValidator.validate(
             plan.operation,
             [plan.target_column] if plan.target_column else [],
+            plan.unresolved_text,
         )
 
         print("=" * 60)
@@ -35,7 +38,13 @@ class QueryEngine:
         print("Operation         :", plan.operation)
         print(
             "Matched Columns   :",
-            [plan.target_column.name] if plan.target_column else [],
+            [plan.target_column.name]
+            if plan.target_column
+            else [],
+        )
+        print(
+            "Unresolved Text   :",
+            repr(plan.unresolved_text),
         )
         print("Validation        :", validation.success)
         print("Validation Error  :", validation.error)

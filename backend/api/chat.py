@@ -58,14 +58,10 @@ def chat(request: InsightAPIRequest):
     print("QUERY PLAN:", plan)
     if not response.get("success"):
         print("ANALYTICS FAILED:", response)
-        # return {
-        #     "success": False,
-        #     "analytics_error": response,
-        # }
         return {
             "success": False,
-            "analytics_error": response,
-            "plan": str(plan),
+            "mode": "analytics",
+            "response": response,
         }
 
     if response.get("success"):

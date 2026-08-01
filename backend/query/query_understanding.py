@@ -29,6 +29,7 @@ class QueryUnderstanding:
     - Extract ranking information
     - Extract grouping dimensions
     - Match user references to dataset columns
+    - Preserve unresolved text for final validation
     - Construct and return a QueryPlan
     """
 
@@ -41,6 +42,7 @@ class QueryUnderstanding:
         dimensions,
         conditions,
         ranking,
+        unresolved_text: str = "",
     ):
         """
         Prints one compact summary of the final query understanding.
@@ -74,6 +76,7 @@ class QueryUnderstanding:
 
         print("Conditions    :", conditions)
         print("Ranking       :", ranking)
+        print("Unresolved    :", repr(unresolved_text))
 
         print("=" * 60)
 
@@ -117,6 +120,8 @@ class QueryUnderstanding:
                 condition_result.cleaned_text,
             )
 
+            unresolved_text = ranking_result.cleaned_text
+
             cls._print_debug_summary(
                 question=question,
                 normalized_question=normalized_question,
@@ -125,6 +130,7 @@ class QueryUnderstanding:
                 dimensions=[],
                 conditions=condition_result.conditions,
                 ranking=ranking_result.ranking,
+                unresolved_text=unresolved_text,
             )
 
             return QueryPlan(
@@ -133,6 +139,7 @@ class QueryUnderstanding:
                 dimensions=[],
                 conditions=condition_result.conditions,
                 ranking=ranking_result.ranking,
+                unresolved_text=unresolved_text,
             )
 
         # ----------------------------------------
@@ -144,6 +151,8 @@ class QueryUnderstanding:
 
         dimensions: list[Dimension] = []
         measure_columns: list[ColumnSchema] = []
+
+        remaining_text = ranking_result.cleaned_text
 
         # ----------------------------------------
         # Ranking analytics
@@ -195,15 +204,11 @@ class QueryUnderstanding:
                     else []
                 )
 
-            # ------------------------------------
-            # Infer SUM for numeric ranking measure
-            # ------------------------------------
-            if (
-                operation is None
-                and measure_columns
-                and measure_columns[0].is_numeric
-            ):
-                operation = Operation.SUM
+            # RankingAnalyticsParser has already consumed
+            # the ranking structure it understands.
+            # Avoid treating successfully parsed ranking
+            # language as unresolved filter text.
+            remaining_text = ""
 
         # ----------------------------------------
         # Non-ranking analytics
@@ -290,6 +295,7 @@ class QueryUnderstanding:
             dimensions=dimensions,
             conditions=condition_result.conditions,
             ranking=ranking_result.ranking,
+            unresolved_text=remaining_text,
         )
 
         return QueryPlan(
@@ -298,4 +304,5 @@ class QueryUnderstanding:
             dimensions=dimensions,
             conditions=condition_result.conditions,
             ranking=ranking_result.ranking,
+            unresolved_text=remaining_text,
         )

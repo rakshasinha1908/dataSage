@@ -15,10 +15,15 @@ class QueryPlan:
 
     operation: str
 
-    target_column: ColumnSchema
+    target_column: ColumnSchema | None
 
     dimensions: List[Dimension] = field(default_factory=list)
 
     conditions: List[Condition] = field(default_factory=list)
 
     ranking: Ranking | None = None
+
+    # Text that remained unresolved after query understanding.
+    # Used by validation to prevent silently ignoring
+    # unsupported or invalid filter expressions.
+    unresolved_text: str = ""
