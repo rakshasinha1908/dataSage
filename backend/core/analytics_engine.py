@@ -211,7 +211,7 @@ class AnalyticsEngine:
 
             if (
                 plan.ranking is not None
-                and plan.ranking.is_explicit
+                and not plan.ranking.show_all
                 and plan.ranking.limit is not None
             ):
                 result = result.head(

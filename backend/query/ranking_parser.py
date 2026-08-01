@@ -133,17 +133,44 @@ class RankingParser:
 
                     keyword = default_keyword_match.group(1).lower()
 
+                    # -----------------------------------
+                    # Singular superlatives
+                    #
+                    # "highest", "lowest", "best", etc.
+                    # ask for one extreme result.
+                    #
+                    # Bare "top" / "bottom" still use the
+                    # default ranked-list size.
+                    # -----------------------------------
+
+                    singular_superlatives = {
+                        "highest",
+                        "lowest",
+                        "largest",
+                        "smallest",
+                        "biggest",
+                        "least",
+                        "best",
+                        "worst",
+                    }
+
+                    ascending_keywords = {
+                        "bottom",
+                        "lowest",
+                        "smallest",
+                        "least",
+                        "worst",
+                    }
+
                     ranking = Ranking(
-                        limit=10,
+                        limit=(
+                            1
+                            if keyword in singular_superlatives
+                            else 10
+                        ),
                         direction=(
                             "asc"
-                            if keyword in (
-                                "bottom",
-                                "lowest",
-                                "smallest",
-                                "least",
-                                "worst",
-                            )
+                            if keyword in ascending_keywords
                             else "desc"
                         ),
                         is_explicit=False,

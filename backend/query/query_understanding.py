@@ -115,11 +115,41 @@ class QueryUnderstanding:
             Operation.HEAD,
             Operation.TAIL,
         ):
+            # ------------------------------------
+            # Resolve ranking / row limits
+            # ------------------------------------
             ranking_result = RankingParser.parse(
                 condition_result.cleaned_text,
             )
 
-            unresolved_text = ranking_result.cleaned_text
+            remaining_text = ranking_result.cleaned_text
+
+            # ------------------------------------
+            # Resolve categorical value filters
+            # ------------------------------------
+            resolved_conditions, remaining_text = (
+                FilterValueResolver.resolve(
+                    remaining_text,
+                    schema,
+                )
+            )
+            condition_result.conditions.extend(resolved_conditions)
+
+            # ------------------------------------
+            # Resolve numeric filters
+            # ------------------------------------
+            numeric_result = NumericFilterParser.parse(
+                remaining_text,
+                schema,
+            )
+            condition_result.conditions.extend(numeric_result.conditions)
+            remaining_text = numeric_result.cleaned_text
+
+            # ------------------------------------
+            # Remove harmless conversational words
+            # ------------------------------------
+            remaining_text = remove_filler_words(remaining_text)
+            remaining_text = " ".join(remaining_text.split())
 
             cls._print_debug_summary(
                 question=question,
@@ -129,7 +159,7 @@ class QueryUnderstanding:
                 dimensions=[],
                 conditions=condition_result.conditions,
                 ranking=ranking_result.ranking,
-                unresolved_text=unresolved_text,
+                unresolved_text=remaining_text,
             )
 
             return QueryPlan(
@@ -138,7 +168,7 @@ class QueryUnderstanding:
                 dimensions=[],
                 conditions=condition_result.conditions,
                 ranking=ranking_result.ranking,
-                unresolved_text=unresolved_text,
+                unresolved_text=remaining_text,
             )
 
         ranking_result = RankingParser.parse(
@@ -154,6 +184,26 @@ class QueryUnderstanding:
             analytics_result = RankingAnalyticsParser.parse(
                 ranking_result.cleaned_text,
             )
+            print("=" * 60)
+            print("RANKING ANALYTICS DEBUG")
+            print("=" * 60)
+            print(
+                "Ranking Cleaned Text :",
+                repr(ranking_result.cleaned_text),
+            )
+            print(
+                "Group Phrase         :",
+                repr(analytics_result.group_phrase),
+            )
+            print(
+                "Measure Phrase       :",
+                repr(analytics_result.measure_phrase),
+            )
+            print(
+                "Cleaned Text         :",
+                repr(analytics_result.cleaned_text),
+            )
+            print("=" * 60)
 
             if analytics_result.group_phrase:
                 group_columns = ColumnMatcher.match(
@@ -165,22 +215,25 @@ class QueryUnderstanding:
                     )
 
             if analytics_result.measure_phrase:
-                measure_phrase = analytics_result.measure_phrase
-                if operation == Operation.COUNT:
-                    measure_phrase = cls._remove_count_entity_words(
-                        measure_phrase
-                    )
+                # Apply the same measure cleanup used by non-ranking analytical queries.
+                measure_phrase = cls._prepare_measure_text(
+                    operation,
+                    analytics_result.measure_phrase,
+                )
 
                 candidate_result = MeasureCandidateParser.parse(
                     measure_phrase,
                 )
 
                 resolved_measure, remaining_text = MeasureResolver.resolve(
-                    candidate_result, schema
+                    candidate_result,
+                    schema,
                 )
 
                 measure_columns = (
-                    [resolved_measure] if resolved_measure is not None else []
+                    [resolved_measure]
+                    if resolved_measure is not None
+                    else []
                 )
 
             remaining_text = ""
@@ -224,7 +277,6 @@ class QueryUnderstanding:
                 if comparison_result.dimensions:
                     dimensions = comparison_result.dimensions
 
-                # IMPORTANT: Continue with the text left after comparison parsing.
                 remaining_text = comparison_result.cleaned_text
 
             # ------------------------------------
@@ -234,7 +286,6 @@ class QueryUnderstanding:
                 remaining_text,
                 schema,
             )
-
             condition_result.conditions.extend(resolved_conditions)
 
             # ------------------------------------
@@ -244,12 +295,10 @@ class QueryUnderstanding:
                 remaining_text,
                 schema,
             )
-
             condition_result.conditions.extend(numeric_result.conditions)
             remaining_text = numeric_result.cleaned_text
 
         final_operation = operation or Operation.SUM
-
         target_column = measure_columns[0] if measure_columns else None
 
         cls._print_debug_summary(

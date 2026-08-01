@@ -25,36 +25,56 @@ class OperationParser:
         "schema": Operation.COLUMNS,
     }
 
+    RETRIEVAL_VERBS = {
+        "show",
+        "display",
+        "list",
+    }
+
+    ROW_WORDS = {
+        "row",
+        "rows",
+        "record",
+        "records",
+        "data",
+    }
+
     @classmethod
     def parse(cls, question: str) -> dict:
 
-
         normalized_question = question.lower().strip()
+        words = normalized_question.split()
 
         # ----------------------------------------
         # Dataset Preview (Top)
         # ----------------------------------------
 
         if (
-            "top" in normalized_question
+            "top" in words
             and any(
-                word in normalized_question
-                for word in ("row", "rows", "record", "records")
+                word in cls.ROW_WORDS
+                for word in words
             )
         ):
-
             remaining_text = normalized_question
 
-            # Keep "top" so RankingParser can detect direction.
+            # Keep "top" so RankingParser can
+            # detect direction / limit.
             for word in (
                 "rows",
                 "row",
                 "records",
                 "record",
             ):
-                remaining_text = remaining_text.replace(word, "", 1)
+                remaining_text = remaining_text.replace(
+                    word,
+                    "",
+                    1,
+                )
 
-            remaining_text = " ".join(remaining_text.split())
+            remaining_text = " ".join(
+                remaining_text.split()
+            )
 
             return {
                 "operation": Operation.HEAD,
@@ -66,25 +86,31 @@ class OperationParser:
         # ----------------------------------------
 
         if (
-            "bottom" in normalized_question
+            "bottom" in words
             and any(
-                word in normalized_question
-                for word in ("row", "rows", "record", "records")
+                word in cls.ROW_WORDS
+                for word in words
             )
         ):
-
             remaining_text = normalized_question
 
-            # Keep "bottom" so RankingParser can detect direction.
+            # Keep "bottom" so RankingParser can
+            # detect direction / limit.
             for word in (
                 "rows",
                 "row",
                 "records",
                 "record",
             ):
-                remaining_text = remaining_text.replace(word, "", 1)
+                remaining_text = remaining_text.replace(
+                    word,
+                    "",
+                    1,
+                )
 
-            remaining_text = " ".join(remaining_text.split())
+            remaining_text = " ".join(
+                remaining_text.split()
+            )
 
             return {
                 "operation": Operation.TAIL,
@@ -92,46 +118,80 @@ class OperationParser:
             }
 
         # ----------------------------------------
-        # Row Retrieval
+        # Statistical / Metadata Operations
+        #
+        # These must be checked BEFORE generic
+        # row retrieval.
+        #
+        # Example:
+        #   "show average sales by city"
+        #
+        # must remain MEAN, not SHOW_ROWS.
         # ----------------------------------------
 
-        words = normalized_question.split()
+        for keyword, operation in cls.OPERATIONS.items():
 
-        retrieval_verbs = {
-            "show",
-            "display",
-            "list",
-        }
+            if keyword in words:
 
-        row_words = {
-            "row",
-            "rows",
-            "record",
-            "records",
-            "data",
-        }
+                remaining_words = words.copy()
+                remaining_words.remove(keyword)
 
-        if (
-            any(word in retrieval_verbs for word in words)
-            and any(word in row_words for word in words)
-        ):
+                # Remove harmless presentation verbs.
+                #
+                # Example:
+                #   "show average sales"
+                #       -> average operation
+                #       -> remaining: "sales"
+                remaining_words = [
+                    word
+                    for word in remaining_words
+                    if word not in cls.RETRIEVAL_VERBS
+                ]
 
-            remaining_text = normalized_question
-
-            # Remove retrieval verb only.
-            for phrase in (
-                "show me",
-                "show",
-                "display",
-                "list",
-            ):
-                remaining_text = remaining_text.replace(
-                    phrase,
-                    "",
-                    1,
+                remaining_text = " ".join(
+                    remaining_words
                 )
 
-            remaining_text = " ".join(remaining_text.split())
+                return {
+                    "operation": operation,
+                    "remaining_text": remaining_text,
+                }
+
+        # ----------------------------------------
+        # Row Retrieval
+        #
+        # If the user explicitly starts with a
+        # retrieval verb and no analytical operation
+        # was found above, interpret the request as
+        # asking for matching rows.
+        #
+        # This allows:
+        #
+        #   show viewers with age > 15
+        #   show patients with age > 50
+        #   list customers in Delhi
+        #   display orders above 1000
+        #
+        # without knowing what entity the dataset
+        # represents.
+        # ----------------------------------------
+
+        if (
+            words
+            and words[0] in cls.RETRIEVAL_VERBS
+        ):
+            remaining_words = words[1:]
+
+            # Handle "show me ..."
+            if (
+                remaining_words
+                and remaining_words[0] == "me"
+            ):
+                remaining_words = remaining_words[1:]
+
+            remaining_text = " ".join(
+                remaining_words
+            )
 
             return {
                 "operation": Operation.SHOW_ROWS,
@@ -139,23 +199,8 @@ class OperationParser:
             }
 
         # ----------------------------------------
-        # Statistical / Metadata Operations
+        # No explicit operation
         # ----------------------------------------
-
-        words = normalized_question.split()
-
-        for keyword, operation in cls.OPERATIONS.items():
-
-            if keyword in words:
-
-                words.remove(keyword)
-
-                remaining_text = " ".join(words)
-
-                return {
-                    "operation": operation,
-                    "remaining_text": remaining_text,
-                }
 
         return {
             "operation": None,
