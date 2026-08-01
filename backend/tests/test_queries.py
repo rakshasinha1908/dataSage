@@ -1,405 +1,776 @@
-import requests
+import os
 from datetime import datetime
+
+import requests
+
+
+# ============================================================
+# CONFIGURATION
+# ============================================================
 
 BASE_URL = "http://127.0.0.1:8000"
 
-# ---------------------------------------------
-# IMPORTANT
-# Paste your session_id here after uploading
-# a dataset once from the frontend.
-# ---------------------------------------------
-SESSION_ID = "0dea9357-74ff-423f-b6ce-7977f33d7634"
+CURRENT_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
 
-print(f"Using Session ID: {SESSION_ID}")
-
-# hospital dataset
-TEST_QUERIES = [
-    "average cost for age > 40",
-    "average cost for age < 40",
-    "average cost for age >= 40",
-    "average cost for age <= 40",
-
-    "average cost for age greater than 40",
-    "average cost for age above 40",
-    "average cost for age over 40",
-
-    "average cost for age less than 40",
-    "average cost for age below 40",
-    "average cost for age under 40",
-
-    "average cost for age at least 40",
-    "average cost for age at most 40",
-
-    "average cost for age equals 40",
-
-    # Metadata
-    # "describe dataset",
-    # "dataset summary",
-    # "show columns",
-    # "show schema",
-
-    # # Row Retrieval
-    # "show rows",
-    # "show 10 rows",
-    # "show all rows",
-    # "top 10 rows",
-    # "bottom 10 rows",
-    # "first 15 rows",
-    # "last 20 rows",
-
-    # # Conditions
-    # "show rows where gender is female",
-    # "show rows where readmission is no",
-    # "show rows where outcome is recovered",
-
-    # "show 10 rows where condition is heart disease",
-
-    # # Aggregations
-    # "average cost",
-    # "sum cost",
-    # "maximum cost",
-    # "minimum cost",
-    # "average age",
-    # "average length of stay",
-    # "count patients",
-
-    # # Group By
-    # "average cost by condition",
-    # "average cost by procedure",
-    # "average length of stay by condition",
-    # "count patients by gender",
-    # "count patients by outcome",
-
-    # # Combined
-    # "average cost where gender is female",
-    # "count patients where readmission is no",
-    # "average length of stay where outcome is recovered",
-
-    # # Ranking
-    # "top 5 conditions by cost",
-    # "bottom 5 procedures by cost",
-
-    # # Invalid
-    # "average procedure",
-    # "sum patient id",
-]
-
-# flower dataset
-# TEST_QUERIES = [
-
-#     # Metadata
-#     "describe dataset",
-#     "dataset summary",
-#     "show columns",
-#     "show schema",
-
-#     # Row Retrieval
-#     "show rows",
-#     "show 10 rows",
-#     "show all rows",
-#     "top 10 rows",
-#     "bottom 10 rows",
-#     "first 15 rows",
-#     "last 20 rows",
-
-#     # Conditions
-#     "show rows where species is rose",
-#     "show rows where fragrance is mild",
-
-#     "show 10 rows where species is rose",
-
-#     # Aggregations
-#     "average height",
-#     "sum height",
-#     "maximum height",
-#     "minimum height",
-#     "count flowers",
-
-#     # Group By
-#     "average height by species",
-#     "average height by fragrance",
-#     "count flowers by species",
-#     "count flowers by fragrance",
-
-#     # Combined
-#     "average height where species is rose",
-#     "count flowers where fragrance is mild",
-
-#     # Ranking
-#     "top 5 species by height",
-#     "bottom 5 fragrances by height",
-
-#     # Invalid
-#     "average fragrance",
-#     "sum species",
-# ]
-
-# sales dataset
-# TEST_QUERIES = [
-
-#     # =====================================
-#     # Metadata
-#     # =====================================
-#     "describe dataset",
-#     "dataset summary",
-#     "show columns",
-#     "show schema",
-
-#     # =====================================
-#     # Row Retrieval
-#     # =====================================
-#     "show rows",
-#     "show me rows",
-#     "display rows",
-#     "list rows",
-
-#     "show 10 rows",
-#     "show 25 rows",
-#     "show 50 rows",
-#     "show 100 rows",
-#     "show 500 rows",
-
-#     "show all rows",
-#     "show every row",
-#     "show all records",
-
-#     # =====================================
-#     # Ranking
-#     # =====================================
-#     "top 10 rows",
-#     "bottom 10 rows",
-#     "first 15 rows",
-#     "last 20 rows",
-
-#     "top 10 rows where city is delhi",
-#     "bottom 10 rows where city is delhi",
-
-#     # =====================================
-#     # Conditions
-#     # =====================================
-#     "show rows where city is delhi",
-#     "show rows where prepaid order is yes",
-#     "show rows where membership customer is yes",
-
-#     "show 10 rows where city is delhi",
-#     "show all rows where city is delhi",
-
-#     # =====================================
-#     # Aggregations
-#     # =====================================
-#     "average transaction amount",
-#     "sum transaction amount",
-#     "maximum transaction amount",
-#     "minimum transaction amount",
-#     "count customers",
-
-#     # =====================================
-#     # Group By
-#     # =====================================
-#     "average transaction amount by category",
-#     "average transaction amount by city",
-#     "sum transaction amount by category",
-#     "count customers by city",
-
-#     # =====================================
-#     # Combined
-#     # =====================================
-#     "average transaction amount where city is delhi",
-#     "count customers where prepaid order is yes",
-#     "sum transaction amount where membership customer is yes",
-
-#     # =====================================
-#     # Ranking + Group By
-#     # =====================================
-#     "top 5 categories by transaction amount",
-#     "bottom 10 cities by transaction amount",
-
-#     # =====================================
-#     # Invalid Queries
-#     # =====================================
-#     "show 0 rows",
-#     "show 99999 rows",
-#     "average comments",
-#     "sum customer full name",
-# ]
-
-# cartoon dataset
-# TEST_QUERIES = [
-
-#     # =====================================
-#     # Metadata
-#     # =====================================
-#     "describe dataset",
-#     "dataset summary",
-#     "show columns",
-#     "show schema",
-
-#     # =====================================
-#     # Row Retrieval
-#     # =====================================
-#     "show rows",
-#     "show 10 rows",
-#     "show all rows",
-#     "top 10 rows",
-#     "bottom 10 rows",
-#     "first 15 rows",
-#     "last 20 rows",
-
-#     # =====================================
-#     # Conditions
-#     # =====================================
-#     "show rows where city is hyderabad",
-#     "show rows where subscription status is yes",
-
-#     "show 10 rows where city is hyderabad",
-#     "show all rows where subscription status is yes",
-
-#     # =====================================
-#     # Aggregations
-#     # =====================================
-#     "average viewing time",
-#     "sum viewing time",
-#     "maximum viewing time",
-#     "minimum viewing time",
-#     "count viewers",
-
-#     # =====================================
-#     # Group By
-#     # =====================================
-#     "average viewing time by city",
-#     "average viewing time by favorite cartoon",
-#     "count viewers by city",
-#     "count viewers by favorite cartoon",
-
-#     # =====================================
-#     # Combined
-#     # =====================================
-#     "average viewing time where city is hyderabad",
-#     "count viewers where subscription status is yes",
-
-#     # =====================================
-#     # Ranking
-#     # =====================================
-#     "top 5 cities by viewing time",
-#     "bottom 5 favorite cartoons by viewing time",
-
-#     # =====================================
-#     # Invalid
-#     # =====================================
-#     "average viewer name",
-#     "sum favorite cartoon",
-# ]
+DATASETS_DIR = os.path.join(
+    CURRENT_DIR,
+    "dataset",
+)
 
 
+# ============================================================
+# DATASET TEST CONFIGURATION
+# ============================================================
+
+TEST_SUITES = {
+
+    # --------------------------------------------------------
+    # HOSPITAL
+    # --------------------------------------------------------
+
+    "hospital": {
+        "filename": "hospital.csv",
+        "queries": [
+
+            # -----------------------------
+            # Metadata / dataset overview
+            # -----------------------------
+
+            "describe dataset",
+            "show columns",
+            "show schema",
+
+            # -----------------------------
+            # Row retrieval
+            # -----------------------------
+
+            "show rows",
+            "show 10 rows",
+            "top 10 rows",
+            "bottom 10 rows",
+
+            # -----------------------------
+            # Aggregations
+            # -----------------------------
+
+            "average cost",
+            "maximum cost",
+            "minimum cost",
+            "average age",
+            "average length of stay",
+
+            # -----------------------------
+            # Numeric filters
+            # -----------------------------
+
+            "average cost for age > 40",
+            "average cost for age < 40",
+            "average cost for age >= 40",
+            "average cost for age <= 40",
+
+            "average cost for age greater than 40",
+            "average cost for age above 40",
+            "average cost for age over 40",
+
+            "average cost for age less than 40",
+            "average cost for age below 40",
+            "average cost for age under 40",
+
+            "average cost for age at least 40",
+            "average cost for age at most 40",
+            "average cost for age equals 40",
+
+            # -----------------------------
+            # Categorical filters
+            # -----------------------------
+
+            "show rows where gender is female",
+            "show rows where outcome is recovered",
+
+            # -----------------------------
+            # Grouped analytics
+            # -----------------------------
+
+            "average cost by condition",
+            "average cost by procedure",
+            "average length of stay by condition",
+
+            # -----------------------------
+            # Combined
+            # -----------------------------
+
+            "average cost where gender is female",
+            "average length of stay where outcome is recovered",
+
+            # -----------------------------
+            # Ranking
+            # -----------------------------
+
+            "top 5 conditions by cost",
+            "bottom 5 procedures by cost",
+        ],
+    },
+
+    # --------------------------------------------------------
+    # SALES
+    # --------------------------------------------------------
+
+    "sales": {
+        "filename": "sales.csv",
+        "queries": [
+
+            # -----------------------------
+            # Metadata
+            # -----------------------------
+
+            "describe dataset",
+            "show columns",
+            "show schema",
+
+            # -----------------------------
+            # Row retrieval
+            # -----------------------------
+
+            "show rows",
+            "show me rows",
+            "display rows",
+            "list rows",
+
+            "show 10 rows",
+            "show 25 rows",
+            "show all rows",
+
+            "top 10 rows",
+            "bottom 10 rows",
+            "first 15 rows",
+            "last 20 rows",
+
+            # -----------------------------
+            # Aggregations
+            # -----------------------------
+
+            "average transaction amount",
+            "sum transaction amount",
+            "maximum transaction amount",
+            "minimum transaction amount",
+
+            # -----------------------------
+            # Grouping
+            # -----------------------------
+
+            "average transaction amount by category",
+            "average transaction amount by city",
+            "sum transaction amount by category",
+
+            # -----------------------------
+            # Filters
+            # -----------------------------
+
+            "show rows where city is delhi",
+            "average transaction amount where city is delhi",
+
+            # -----------------------------
+            # Ranking
+            # -----------------------------
+
+            "top 5 categories by transaction amount",
+            "bottom 10 cities by transaction amount",
+        ],
+    },
+
+    # --------------------------------------------------------
+    # CARTOON / VIEWER
+    # --------------------------------------------------------
+
+    "cartoon": {
+        "filename": "cartoon.csv",
+        "queries": [
+
+            # -----------------------------
+            # Metadata
+            # -----------------------------
+
+            "describe dataset",
+            "show columns",
+            "show schema",
+
+            # -----------------------------
+            # Row retrieval
+            # -----------------------------
+
+            "show rows",
+            "show 10 rows",
+            "show all rows",
+
+            # -----------------------------
+            # Aggregations
+            # -----------------------------
+
+            "average viewing time",
+            "sum viewing time",
+            "maximum viewing time",
+            "minimum viewing time",
+
+            # -----------------------------
+            # Filters
+            # -----------------------------
+
+            "show rows where city is hyderabad",
+            "average viewing time where city is hyderabad",
+
+            "show viewers with age > 15",
+
+            # -----------------------------
+            # Grouped analytics
+            # -----------------------------
+
+            "average viewing time by city",
+            "average viewing time by favorite cartoon",
+
+            # -----------------------------
+            # Ranking
+            # -----------------------------
+
+            "top 5 cities by viewing time",
+            "bottom 5 favorite cartoons by viewing time",
+
+            # Important regression case
+            "which cartoon has the highest average viewing time?",
+
+            # Comparison regression
+            "How does average viewing time compare between subscribers and non-subscribers?",
+        ],
+    },
+
+    # --------------------------------------------------------
+    # FLOWER
+    # --------------------------------------------------------
+
+    "flower": {
+        "filename": "flower.csv",
+        "queries": [
+
+            # -----------------------------
+            # Metadata
+            # -----------------------------
+
+            "describe dataset",
+            "show columns",
+            "show schema",
+
+            # -----------------------------
+            # Row retrieval
+            # -----------------------------
+
+            "show rows",
+            "show 10 rows",
+            "show all rows",
+
+            # -----------------------------
+            # Aggregations
+            # -----------------------------
+
+            "average height",
+            "sum height",
+            "maximum height",
+            "minimum height",
+
+            # -----------------------------
+            # Categorical filters
+            # -----------------------------
+
+            "average height for roses",
+            "show rows where species is rose",
+            "show rows where fragrance is mild",
+
+            # -----------------------------
+            # Numeric filters
+            # -----------------------------
+
+            "show species with height < 150",
+
+            # -----------------------------
+            # Multiple filters
+            # -----------------------------
+
+            "show species with height < 150 and fragrance strong",
+
+            # -----------------------------
+            # Grouped analytics
+            # -----------------------------
+
+            "average height by species",
+            "average height by fragrance",
+            "count species by size",
+
+            # -----------------------------
+            # Ranking
+            # -----------------------------
+
+            "top 3 species by height",
+            "which species has the highest average height?",
+        ],
+    },
+}
 
 
-def run_query(question):
+# ============================================================
+# KNOWN V1 LIMITATIONS
+# ============================================================
+
+KNOWN_LIMITATIONS = {
+
+    "flower": [
+        (
+            "how does average height compare between small and large sizes?",
+            "Multi-value comparison on the same categorical column "
+            "is deferred to V1.1.",
+        ),
+    ],
+}
+
+
+# ============================================================
+# HTTP HELPERS
+# ============================================================
+
+def upload_dataset(filepath):
+    """
+    Uploads a dataset and returns its session ID.
+    """
+
+    with open(filepath, "rb") as file:
+
+        response = requests.post(
+            f"{BASE_URL}/upload/",
+            files={
+                "file": (
+                    os.path.basename(filepath),
+                    file,
+                    "text/csv",
+                )
+            },
+            timeout=30,
+        )
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    if data.get("status") != "success":
+        raise RuntimeError(
+            f"Dataset upload failed: {data}"
+        )
+
+    session_id = data.get("session_id")
+
+    if not session_id:
+        raise RuntimeError(
+            "Upload succeeded but no session_id was returned."
+        )
+
+    return session_id, data
+
+
+def run_query(session_id, question):
+    """
+    Executes a deterministic analytics query.
+    """
+
     return requests.get(
         f"{BASE_URL}/query",
         params={
-            "session_id": SESSION_ID,
+            "session_id": session_id,
             "question": question,
         },
+        timeout=30,
     )
 
 
-def main():
+# ============================================================
+# RESPONSE VALIDATION
+# ============================================================
+
+def validate_success_response(response):
+    """
+    Phase 1 regression validation.
+
+    A query passes when:
+    - HTTP status is 200
+    - response is valid JSON
+    - response reports success=True
+
+    Exact analytical correctness assertions will be added
+    during Phase 2.
+    """
+
+    if response.status_code != 200:
+        return (
+            False,
+            f"HTTP {response.status_code}",
+            None,
+        )
+
+    try:
+        data = response.json()
+    except Exception:
+        return (
+            False,
+            "Response is not valid JSON.",
+            None,
+        )
+
+    if not data.get("success", False):
+        return (
+            False,
+            data.get(
+                "error",
+                "Response returned success=False.",
+            ),
+            data,
+        )
+
+    return True, None, data
+
+
+# ============================================================
+# LOGGING HELPERS
+# ============================================================
+
+def separator(character="=", length=80):
+    return character * length
+
+
+# ============================================================
+# DATASET TEST RUNNER
+# ============================================================
+
+def run_dataset_suite(
+    dataset_name,
+    config,
+    write,
+):
+    """
+    Uploads one dataset and executes all supported
+    V1 regression queries for that dataset.
+    """
+
+    filename = config["filename"]
+
+    filepath = os.path.join(
+        DATASETS_DIR,
+        filename,
+    )
+
+    write()
+    write(separator())
+    write(f"DATASET: {dataset_name.upper()}")
+    write(separator())
+    write(f"File: {filepath}")
+
+    if not os.path.exists(filepath):
+
+        write(
+            f"❌ DATASET NOT FOUND: {filename}"
+        )
+
+        return {
+            "passed": 0,
+            "failed": 0,
+            "skipped": 0,
+            "dataset_error": True,
+        }
+
+    # --------------------------------------------------------
+    # Upload dataset
+    # --------------------------------------------------------
+
+    try:
+
+        session_id, upload_data = upload_dataset(
+            filepath
+        )
+
+    except Exception as error:
+
+        write(
+            f"❌ UPLOAD FAILED: {error}"
+        )
+
+        return {
+            "passed": 0,
+            "failed": 0,
+            "skipped": 0,
+            "dataset_error": True,
+        }
+
+    write(
+        f"Session ID : {session_id}"
+    )
+
+    write(
+        f"Rows       : {upload_data.get('rows')}"
+    )
+
+    write(
+        f"Columns    : {upload_data.get('columns')}"
+    )
+
+    write(separator("-"))
 
     passed = 0
     failed = 0
+    skipped = 0
 
-    failed_queries = []
+    # --------------------------------------------------------
+    # Supported regression tests
+    # --------------------------------------------------------
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = f"regression_results_{timestamp}.txt"
+    for question in config["queries"]:
 
-    with open(log_file, "w", encoding="utf-8") as log:
+        try:
+
+            response = run_query(
+                session_id,
+                question,
+            )
+
+            (
+                success,
+                reason,
+                _,
+            ) = validate_success_response(
+                response
+            )
+
+            if success:
+
+                passed += 1
+
+                write(
+                    f"✅ PASS | {question}"
+                )
+
+            else:
+
+                failed += 1
+
+                write(
+                    f"❌ FAIL | {question}"
+                )
+
+                write(
+                    f"         Reason: {reason}"
+                )
+
+        except Exception as error:
+
+            failed += 1
+
+            write(
+                f"❌ ERROR | {question}"
+            )
+
+            write(
+                f"          Reason: {error}"
+            )
+
+    # --------------------------------------------------------
+    # Known V1 limitations
+    # --------------------------------------------------------
+
+    limitations = KNOWN_LIMITATIONS.get(
+        dataset_name,
+        [],
+    )
+
+    if limitations:
+
+        write()
+        write("KNOWN V1 LIMITATIONS")
+        write(separator("-"))
+
+        for question, reason in limitations:
+
+            skipped += 1
+
+            write(
+                f"🟡 SKIP | {question}"
+            )
+
+            write(
+                f"         Reason: {reason}"
+            )
+
+    # --------------------------------------------------------
+    # Dataset summary
+    # --------------------------------------------------------
+
+    write()
+    write(
+        f"Dataset Result: "
+        f"{passed} passed, "
+        f"{failed} failed, "
+        f"{skipped} known limitations"
+    )
+
+    return {
+        "passed": passed,
+        "failed": failed,
+        "skipped": skipped,
+        "dataset_error": False,
+    }
+
+
+# ============================================================
+# MAIN REGRESSION RUNNER
+# ============================================================
+
+def main():
+
+    timestamp = datetime.now().strftime(
+        "%Y%m%d_%H%M%S"
+    )
+
+    log_file = os.path.join(
+        CURRENT_DIR,
+        f"regression_results_{timestamp}.txt",
+    )
+
+    total_passed = 0
+    total_failed = 0
+    total_skipped = 0
+
+    dataset_errors = 0
+
+    with open(
+        log_file,
+        "w",
+        encoding="utf-8",
+    ) as log:
 
         def write(text=""):
             print(text)
             log.write(text + "\n")
 
-        write("=" * 80)
-        write("DataSage V2 Regression Report")
-        write(f"Generated : {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}")
-        write(f"Session ID: {SESSION_ID}")
-        write("=" * 80)
-        write()
+        write(separator())
+        write("DataSage V1 — Regression Report")
+        write(
+            "Generated: "
+            + datetime.now().strftime(
+                "%d-%m-%Y %H:%M:%S"
+            )
+        )
+        write(separator())
 
-        for query in TEST_QUERIES:
+        # ----------------------------------------------------
+        # Run every dataset suite
+        # ----------------------------------------------------
 
-            try:
+        for (
+            dataset_name,
+            config,
+        ) in TEST_SUITES.items():
 
-                response = run_query(query)
+            result = run_dataset_suite(
+                dataset_name,
+                config,
+                write,
+            )
 
-                if response.status_code != 200:
-                    failed += 1
+            total_passed += result["passed"]
+            total_failed += result["failed"]
+            total_skipped += result["skipped"]
 
-                    failed_queries.append(
-                        (query, f"HTTP {response.status_code}")
-                    )
+            if result["dataset_error"]:
+                dataset_errors += 1
 
-                    write(f"❌ FAIL | {query}")
-                    continue
-
-                data = response.json()
-
-                if data.get("success", False):
-
-                    passed += 1
-                    write(f"✅ PASS | {query}")
-
-                else:
-
-                    failed += 1
-
-                    reason = data.get("error", "Unknown Error")
-
-                    failed_queries.append(
-                        (query, reason)
-                    )
-
-                    write(f"❌ FAIL | {query}")
-
-            except Exception as e:
-
-                failed += 1
-
-                failed_queries.append(
-                    (query, str(e))
-                )
-
-                write(f"❌ ERROR | {query}")
+        # ----------------------------------------------------
+        # Final report
+        # ----------------------------------------------------
 
         write()
-        write("=" * 80)
-        write("SUMMARY")
-        write("=" * 80)
-        write(f"Passed : {passed}")
-        write(f"Failed : {failed}")
+        write(separator())
+        write("FINAL REGRESSION SUMMARY")
+        write(separator())
 
-        accuracy = (passed / len(TEST_QUERIES)) * 100
+        write(
+            f"Passed             : {total_passed}"
+        )
 
-        write(f"Success Rate : {accuracy:.2f}%")
-        write("=" * 80)
+        write(
+            f"Failed             : {total_failed}"
+        )
 
-        if failed_queries:
+        write(
+            f"Known Limitations  : {total_skipped}"
+        )
+
+        write(
+            f"Dataset Errors     : {dataset_errors}"
+        )
+
+        executed_tests = (
+            total_passed
+            + total_failed
+        )
+
+        if executed_tests > 0:
+
+            success_rate = (
+                total_passed
+                / executed_tests
+                * 100
+            )
+
+        else:
+            success_rate = 0.0
+
+        write(
+            f"Success Rate       : "
+            f"{success_rate:.2f}%"
+        )
+
+        write(separator())
+
+        # ----------------------------------------------------
+        # Release gate
+        # ----------------------------------------------------
+
+        if (
+            total_failed == 0
+            and dataset_errors == 0
+        ):
 
             write()
-            write("FAILED QUERIES")
-            write("-" * 80)
+            write(
+                "🟢 V1 CORE REGRESSION GATE: PASS"
+            )
 
-            for query, reason in failed_queries:
+            write(
+                "No failures were detected in the "
+                "supported regression suite."
+            )
 
-                write(f"• {query}")
-                write(f"  Reason : {reason}")
-                write()
+        else:
+
+            write()
+            write(
+                "🔴 V1 CORE REGRESSION GATE: FAIL"
+            )
+
+            write(
+                "Review failing supported tests before "
+                "deployment."
+            )
 
     print()
-    print("=" * 80)
-    print(f"Regression report saved to:")
+    print(separator())
+    print("Regression report saved to:")
     print(log_file)
-    print("=" * 80)
+    print(separator())
 
 
 if __name__ == "__main__":
