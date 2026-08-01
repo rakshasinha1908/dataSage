@@ -6,22 +6,21 @@ from utils.text_utils import normalize_text
 
 class ComparisonDimensionParser:
     """
-    Resolves implicit grouping dimensions from
-    comparative language.
+    Resolves implicit grouping dimensions from comparative language.
 
-    Comparison intent is detected from the original
-    question, while dimension evidence is resolved
-    from the remaining analytical text.
+    Comparison intent is detected from the original question,
+    while dimension evidence is resolved from the remaining
+    analytical text.
 
     Examples
     --------
     compare between members and non members
     compare male and female patients
     difference between prepaid and non prepaid orders
+    subscribers and non subscribers
 
-    Resolution is based on categorical / boolean
-    sample values and column semantics rather than
-    dataset-specific column names.
+    Resolution remains schema-driven and does not contain
+    dataset-specific column mappings.
     """
 
     COMPARISON_MARKERS = {
@@ -33,6 +32,121 @@ class ComparisonDimensionParser:
         "difference",
         "differ",
     }
+
+    @staticmethod
+    def _semantic_root(word: str) -> str:
+        """
+        Produces a lightweight lexical root.
+
+        This is intentionally conservative. It is not intended
+        to be a complete stemming algorithm.
+
+        Examples
+        --------
+        membership   -> member
+        ownership    -> owner
+        subscription -> subscription
+        """
+
+        if word.endswith("ship") and len(word) > 4:
+            return word[:-4]
+
+        return word
+
+    @staticmethod
+    def _common_prefix_length(
+        first: str,
+        second: str,
+    ) -> int:
+        """
+        Returns the number of leading characters shared by
+        two words.
+        """
+
+        length = 0
+
+        for first_char, second_char in zip(
+            first,
+            second,
+        ):
+            if first_char != second_char:
+                break
+
+            length += 1
+
+        return length
+
+    @classmethod
+    def _words_are_related(
+        cls,
+        column_word: str,
+        question_word: str,
+    ) -> bool:
+        """
+        Determines whether a schema word and question word
+        provide strong lexical evidence for each other.
+
+        Supports:
+
+            membership  <-> members
+            subscription <-> subscribers
+
+        without hardcoding either relationship.
+        """
+
+        column_root = cls._semantic_root(
+            column_word
+        )
+
+        question_root = cls._semantic_root(
+            question_word
+        )
+
+        if (
+            len(column_root) < 4
+            or len(question_root) < 4
+        ):
+            return False
+
+        # ------------------------------------
+        # Direct prefix relationship
+        #
+        # member <-> members
+        # ------------------------------------
+
+        if (
+            column_root.startswith(question_root)
+            or question_root.startswith(column_root)
+        ):
+            return True
+
+        # ------------------------------------
+        # Strong common-prefix relationship
+        #
+        # subscription <-> subscriber
+        # share "subscri..."
+        #
+        # Require a reasonably long prefix to
+        # avoid weak accidental matches.
+        # ------------------------------------
+
+        common_prefix = cls._common_prefix_length(
+            column_root,
+            question_root,
+        )
+
+        shortest_length = min(
+            len(column_root),
+            len(question_root),
+        )
+
+        if (
+            common_prefix >= 6
+            and common_prefix / shortest_length >= 0.6
+        ):
+            return True
+
+        return False
 
     @classmethod
     def parse(
@@ -75,7 +189,6 @@ class ComparisonDimensionParser:
 
         # ----------------------------------------
         # Score categorical / boolean columns
-        # based on evidence in remaining text.
         # ----------------------------------------
 
         for column in schema:
@@ -86,7 +199,7 @@ class ComparisonDimensionParser:
             score = 0
 
             # ------------------------------------
-            # Column-name / alias evidence
+            # Exact column / alias evidence
             # ------------------------------------
 
             column_matches = ColumnMatcher.match(
@@ -128,30 +241,17 @@ class ComparisonDimensionParser:
                     ).split()
                 )
 
-                for column_word in column_words:
+                semantic_match = any(
+                    cls._words_are_related(
+                        column_word,
+                        question_word,
+                    )
+                    for column_word in column_words
+                    for question_word in question_words
+                )
 
-                    # Generic lightweight stemming.
-                    #
-                    # membership -> member
-                    # ownership  -> owner
-                    #
-                    # Other words remain unchanged.
-                    if column_word.endswith("ship"):
-                        root = column_word[:-4]
-                    else:
-                        root = column_word
-
-                    if len(root) < 4:
-                        continue
-
-                    if any(
-                        word.startswith(root)
-                        or root.startswith(word)
-                        for word in question_words
-                        if len(word) >= 4
-                    ):
-                        score += 3
-                        break
+                if semantic_match:
+                    score += 3
 
             if score > 0:
                 candidates.append(
@@ -159,7 +259,7 @@ class ComparisonDimensionParser:
                 )
 
         # ----------------------------------------
-        # No defensible dimension found
+        # No defensible dimension
         # ----------------------------------------
 
         if not candidates:
@@ -182,8 +282,8 @@ class ComparisonDimensionParser:
             )
 
         # ----------------------------------------
-        # Remove evidence belonging to the
-        # resolved comparison dimension.
+        # Remove evidence belonging to resolved
+        # comparison dimension
         # ----------------------------------------
 
         cleaned_words = normalized_text.split()
@@ -194,32 +294,18 @@ class ComparisonDimensionParser:
             ).split()
         )
 
-        semantic_roots = set()
-
-        for column_word in column_words:
-
-            if column_word.endswith("ship"):
-                root = column_word[:-4]
-            else:
-                root = column_word
-
-            if len(root) >= 4:
-                semantic_roots.add(root)
-
         filtered_words = []
 
         for word in cleaned_words:
 
             is_dimension_evidence = any(
-                word.startswith(root)
-                or root.startswith(word)
-                for root in semantic_roots
-                if len(word) >= 4
+                cls._words_are_related(
+                    column_word,
+                    word,
+                )
+                for column_word in column_words
             )
 
-            # "non" belongs to expressions such as
-            # "non members" once that comparison
-            # dimension has been resolved.
             if (
                 is_dimension_evidence
                 or word == "non"
