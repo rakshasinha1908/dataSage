@@ -33,10 +33,12 @@ app = FastAPI(
 # CORS
 # -------------------------------------------------
 
+# Local development origin
 allowed_origins = [
     "http://localhost:5173",
 ]
 
+# Production frontend origin
 frontend_url = os.getenv("FRONTEND_URL")
 
 if frontend_url:
@@ -73,6 +75,6 @@ app.include_router(chat_router)
 @app.get("/")
 def home():
     return {
-        "message": "Welcome to DataSage🚀",
+        "message": "Welcome to DataSage 🚀",
         "status": "healthy",
     }
