@@ -1,526 +1,360 @@
-# DataSage
+# ✨ DataSage
 
-> **Ask questions in plain English. Get deterministic answers—not AI guesses.**
+### Ask questions in plain English. Get deterministic answers — not AI guesses.
 
-> **Python computes. AI explains.**
+**Python computes. AI explains.**
+
+DataSage is an AI-assisted analytics platform that lets users upload CSV datasets and explore them using natural language.
+
+Unlike analytics tools that rely on Large Language Models to generate numerical answers, DataSage converts questions into structured analytical operations and executes them using **Python and Pandas**. AI is introduced only when interpretation is required — after the result has already been computed.
 
 <p align="center">
-  <img src="docs/images/upload.png" alt="DataSage Upload UI" width="900"/>
+  <img src="docs/images/upload.png" alt="DataSage Interface" width="900"/>
 </p>
 
-DataSage is an AI-assisted analytics platform that combines natural language understanding with deterministic data analysis.
+<p align="center">
+  <a href="https://datasage-blush.vercel.app"><strong>Live Application</strong></a>
+  &nbsp;&nbsp;•&nbsp;&nbsp;
+  <a href="https://datasage-api-cyfu.onrender.com/docs"><strong>API Documentation</strong></a>
+  &nbsp;&nbsp;•&nbsp;&nbsp;
+  <a href="https://datasage-api-cyfu.onrender.com"><strong>Backend API</strong></a>
+</p>
 
-Unlike traditional AI analytics tools that rely on Large Language Models for calculations, DataSage executes every analytical computation using Python and Pandas, ensuring that every numerical result is accurate, reproducible, and explainable.
-
-Artificial Intelligence is used only where it genuinely adds value—explaining verified results rather than generating them.
-
----
-
-# Why DataSage?
-
-Most AI-powered analytics tools send every user query directly to a Large Language Model.
-
-While this enables natural language interaction, it also introduces several challenges:
-
-- Hallucinated calculations
-- Inconsistent numerical answers
-- Higher inference costs
-- Slower response times
-- Limited transparency
-
-DataSage follows a different philosophy.
-
-Natural language is used only to understand **what** the user wants.
-
-Python determines **how** to compute the answer.
-
-AI is then used to explain verified analytical results.
-
-This approach makes DataSage:
-
-- Deterministic
-- Reproducible
-- Explainable
-- Fast
-- Cost-efficient
+> The backend is hosted on Render's free tier and may take around 30–60 seconds to wake after a period of inactivity.
 
 ---
 
-# Core Philosophy
+## Why DataSage?
 
-## Deterministic before Generative
+Most AI analytics systems can send analytical questions directly to an LLM. This makes natural-language interaction easy, but it can also make numerical results harder to trust and reproduce.
 
-If Python can compute the answer, Python should compute it.
+DataSage separates **computation from interpretation**.
 
-Large Language Models should never replace mathematics.
-
----
-
-## AI as an Analyst—not a Calculator
-
-DataSage never asks AI to calculate:
-
-- averages
-- totals
-- rankings
-- statistics
-
-Instead, AI is responsible for:
-
-- Explaining trends
-- Business reasoning
-- Follow-up discussions
-- Context-aware insights
-- Interpretation
-
----
-
-## Python Computes. AI Explains.
-
-Every query follows the same philosophy.
-
-```
-Question
-      │
-      ▼
-Natural Language Understanding
-      │
-      ▼
-Deterministic Analytics Engine
-      │
-      ▼
-Verified Result
-      │
-      ├────────────► Table
-      │
-      ├────────────► Chart
-      │
-      ▼
-✨ Explain this result
-      │
-      ▼
-AI Insight
+```text
+Natural Language Question
+          ↓
+    Query Understanding
+          ↓
+ Deterministic Analytics
+     (Python + Pandas)
+          ↓
+     Verified Result
+          ↓
+   Optional AI Insight
 ```
 
+If Python can compute something, DataSage doesn't ask AI to calculate it.
+
+AI is instead used to explain verified results, answer contextual follow-ups, and help users understand their dataset.
+
 ---
 
-# Architecture
+## What Can DataSage Do?
 
+Upload a CSV and ask questions such as:
+
+```text
+average transaction amount
+
+average transaction amount by category
+
+show rows where city is delhi
+
+average transaction amount where city is delhi
+
+top 5 categories by transaction amount
+
+which city has the highest average transaction amount?
 ```
-                    Natural Language Question
+
+DataSage currently supports:
+
+| Capability | Examples |
+|---|---|
+| Aggregation | Mean, Sum, Count, Min, Max |
+| Filtering | Numeric, categorical and boolean filters |
+| Grouping | Average revenue by city |
+| Ranking | Top 5 categories by sales |
+| Row retrieval | Show records matching conditions |
+| Visualization | Automatic bar charts |
+| Dataset exploration | Describe this dataset |
+| AI insights | Explain verified analytical results |
+| Follow-ups | Why is this the highest? |
+
+The same query engine works across different dataset structures without requiring a predefined schema.
+
+---
+
+## Context-Aware Analysis
+
+DataSage maintains the latest successful analytical result within each session.
+
+For example:
+
+```text
+User
+average transaction amount by category
+
+DataSage
+Home Appliances     5727.05
+Fashion             5370.31
+Toys                5296.96
+Electronics         4931.48
+Sports              4477.63
+
+User
+why is home appliances highest?
+```
+
+The follow-up is routed to the AI insight layer along with the **verified analytical result**.
+
+The AI can interpret what the result suggests, while distinguishing between what the data establishes and what would require further investigation.
+
+It never needs to recalculate the underlying numbers.
+
+---
+
+## Architecture
+
+DataSage separates natural-language understanding, deterministic computation, and generative reasoning into independent layers.
+
+```text
+                         User Question
                                │
                                ▼
-                     Operation Parser
+                          Chat Router
                                │
-                               ▼
-                     Condition Parser
-                               │
-                               ▼
-                      Ranking Parser
-                               │
-                               ▼
-                     Dimension Parser
-                               │
-                               ▼
-                      Column Matcher
-                               │
-                               ▼
-                     Intent Validator
-                               │
-                               ▼
-                        Query Planner
-                               │
-                               ▼
-                     Analytics Engine
-                               │
-                               ▼
-                  Visualization Selector
-                               │
-                               ▼
-                     Structured API Response
-                               │
-                               ▼
-                     Query Context Storage
-                               │
-                               ▼
-                  Insight Request Builder
-                               │
-                               ▼
-                     Prompt Builder
-                               │
-                               ▼
-                      AI Insight Engine
-                               │
-                               ▼
-                      Gemini Provider
+              ┌────────────────┼────────────────┐
+              │                │                │
+              ▼                ▼                ▼
+          Analytics         Dataset         Contextual
+           Request        Description         Insight
+              │                                  ▲
+              ▼                                  │
+      Query Understanding                        │
+              │                                  │
+       ┌──────┼────────┐                         │
+       ▼      ▼        ▼                         │
+   Filters  Grouping  Ranking                    │
+       └──────┬────────┘                         │
+              ▼                                  │
+          Query Plan                             │
+              │                                  │
+              ▼                                  │
+      Analytics Engine                           │
+      (Python + Pandas)                          │
+              │                                  │
+              ▼                                  │
+       Verified Result                           │
+              │                                  │
+       ┌──────┼────────┐                         │
+       ▼      ▼        ▼                         │
+      KPI   Table     Chart                      │
+              │                                  │
+              ▼                                  │
+         Query Context ──────────────────────────┘
+                                                 │
+                                                 ▼
+                                           Gemini API
+                                                 │
+                                                 ▼
+                                         Grounded Insight
 ```
+
+A conversational request is routed into one of three paths:
+
+- **Analytics** — deterministic computation
+- **Dataset Description** — understanding and exploring the uploaded dataset
+- **Insight** — interpretation of an existing verified result
+
+Unknown analytical requests are not silently handed to the AI layer.
 
 ---
 
-# Features
+## Analytical Reliability
 
-## Dataset Intelligence
+DataSage was validated across structurally different datasets covering sales, healthcare, viewer engagement, and botanical observations.
 
-- CSV Upload
-- Automatic Schema Detection
-- Metadata Extraction
-- Session Management
-- Dataset-aware Query Execution
+Three independent test layers are used:
 
----
+| Test Suite | Result | Purpose |
+|---|---:|---|
+| Regression Suite | **98 / 98** | Natural-language query coverage |
+| Golden Correctness | **15 / 15** | Results verified against independent Pandas calculations |
+| Conversation QA | **11 / 11** | Routing, follow-ups, context and session isolation |
 
-## Natural Language Analytics
+**All supported production test gates passed with zero failures.**
 
-Supports analytical questions like:
-
-```
-Average Revenue
-
-Total Sales
-
-Top 5 Cities by Revenue
-
-Average Salary by Department
-
-Maximum Transaction Amount
-
-Average Transaction Amount in Delhi
-```
+This distinction matters: regression tests verify that queries execute correctly, while golden tests independently verify that the numerical answers themselves are correct.
 
 ---
 
-## Deterministic Analytics
+## Production
 
-Current operations include:
+DataSage is deployed as two independently hosted services:
 
-- Mean
-- Sum
-- Count
-- Minimum
-- Maximum
-- Filtering
-- Grouping
-- Ranking
+```text
+                     User
+                       │
+                       ▼
+              React + Vite Frontend
+                    Vercel
+                       │
+                       ▼
+                 FastAPI Backend
+                     Render
+                       │
+              ┌────────┴────────┐
+              ▼                 ▼
+       Pandas Analytics      Gemini API
+           Engine           Insight Layer
+```
+
+| Layer | Technology |
+|---|---|
+| Frontend | React, Vite |
+| Visualization | Recharts |
+| Backend | FastAPI |
+| Analytics | Pandas, NumPy |
+| AI | Google Gemini |
+| Frontend Hosting | Vercel |
+| Backend Hosting | Render |
+
+Production URLs and API credentials are configured through environment variables and secrets are never committed to the repository.
 
 ---
 
-## Visualization Engine
+## Project Structure
 
-Structured analytical results automatically generate visualizations.
-
-Current support:
-
-- ✅ Bar Charts
-
-Upcoming:
-
-- Line Charts
-- Pie Charts
-- Scatter Plots
-- Histograms
-
----
-
-## AI Insight Engine
-
-Every analytical result is computed deterministically before AI is involved.
-
-Current capabilities:
-
-- Explain analytical results
-- Context-aware follow-up questions
-- Session-aware reasoning
-- Business interpretation
-- Verified insight generation
-
----
-
-## Context-Aware Conversations
-
-DataSage remembers the latest analytical result during a session.
-
-Example:
-
-```
-Average Transaction Amount by City
-```
-
-↓
-
-```
-Mumbai has the highest average transaction amount.
-```
-
-↓
-
-User:
-
-```
-Why?
-```
-
-↓
-
-DataSage automatically understands that "Why?" refers to the previous analytical result and generates an explanation grounded in verified computations.
-
----
-
-# Example Queries
-
-### KPI
-
-```
-Average Revenue
-```
-
-↓
-
-```
-8367.48
-```
-
----
-
-### Filtering
-
-```
-Average Transaction Amount in Delhi
-```
-
-↓
-
-```
-5345.16
-```
-
----
-
-### Grouping
-
-```
-Average Transaction Amount by City
-```
-
-↓
-
-```
-Delhi
-Mumbai
-Chennai
-...
-```
-
-↓
-
-📊 Recommended Visualization
-
-```
-Bar Chart
-```
-
----
-
-### Ranking
-
-```
-Top 3 Average Transaction Amount by City
-```
-
-↓
-
-```
-Mumbai
-
-Delhi
-
-Bangalore
-```
-
----
-
-# Why Not Just Use an LLM?
-
-| Traditional AI Analytics | DataSage |
-|---------------------------|----------|
-| LLM performs calculations | Python performs calculations |
-| Hallucinated numerical answers | Deterministic computations |
-| Every query consumes inference tokens | AI invoked only when required |
-| Limited explainability | Transparent analytical pipeline |
-| Higher operational cost | Cost-efficient architecture |
-
----
-
-# Technology Stack
-
-## Backend
-
-- Python
-- FastAPI
-- Pandas
-- Google Gemini API
-
----
-
-## Frontend
-
-- React
-- Vite
-- Recharts
-
----
-
-# Project Structure
-
-```
+```text
 DataSage/
-
+│
 ├── backend/
-│   ├── api/
-│   ├── core/
-│   │   └── ai/
-│   ├── models/
-│   ├── query/
-│   ├── storage/
+│   ├── api/                 # API routes
+│   ├── core/                # Analytics & AI orchestration
+│   ├── models/              # Internal data models
+│   ├── query/               # Natural-language query pipeline
+│   ├── storage/             # Session management
+│   ├── tests/               # Regression & correctness suites
 │   ├── utils/
-│   └── app.py
+│   ├── app.py
+│   └── requirements.txt
 │
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
 │   │   ├── services/
-│   │   ├── assets/
+│   │   ├── styles/
 │   │   └── App.jsx
+│   └── package.json
 │
 ├── docs/
 │   └── images/
 │
+├── LICENSE
 └── README.md
 ```
 
 ---
 
-# Running Locally
+## Run Locally
 
-Clone the repository.
+### Backend
 
 ```bash
 git clone <repository-url>
-```
+cd dataSage/backend
 
-Navigate to the backend.
-
-```bash
-cd backend
-```
-
-Create a virtual environment.
-
-```bash
 python -m venv venv
 ```
 
-Activate it.
-
-Windows
+Activate the environment:
 
 ```bash
+# Windows
 venv\Scripts\activate
+
+# macOS / Linux
+source venv/bin/activate
 ```
 
-Install dependencies.
+Install dependencies and configure the environment:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Run the backend.
+Create `backend/.env`:
+
+```env
+GEMINI_API_KEY=your_api_key
+GEMINI_MODEL=your_gemini_model
+```
+
+Start the API:
 
 ```bash
 uvicorn app:app --reload
 ```
 
-Backend:
+The API will run at `http://127.0.0.1:8000`.
 
-```
-http://127.0.0.1:8000
-```
+### Frontend
 
-Swagger:
-
-```
-http://127.0.0.1:8000/docs
+```bash
+cd frontend
+npm install
 ```
 
----
+Create `frontend/.env`:
 
-# Roadmap
+```env
+VITE_API_URL=http://127.0.0.1:8000
+```
 
-## Completed
+Start the development server:
 
-- [x] CSV Upload
-- [x] Schema Detection
-- [x] Session Management
-- [x] Natural Language Query Parsing
-- [x] Deterministic Analytics Engine
-- [x] Filtering
-- [x] Grouping
-- [x] Ranking
-- [x] Visualization Recommendation
-- [x] Interactive Charts
-- [x] AI Insight Engine
-- [x] Frontend Integration (MVP)
+```bash
+npm run dev
+```
+
+The frontend will normally run at `http://localhost:5173`.
 
 ---
 
-## Next
+## Design Principles
 
-- [ ] Explain This Result workflow
-- [ ] Line Charts
-- [ ] Pie Charts
-- [ ] Scatter Plots
-- [ ] Download Reports
-- [ ] Interactive Dashboard
-- [ ] Multi-provider AI Support
-- [ ] Deployment
+DataSage is built around three rules:
 
----
+**1. Python computes.**  
+Numerical answers come from deterministic analytical code.
 
-# Design Principles
+**2. AI explains.**  
+Generative AI interprets verified results rather than generating the calculations.
 
-Every architectural decision in DataSage follows three simple principles:
-
-- Python computes.
-- AI explains.
-- Deterministic results always take priority over generated responses.
-
-These principles guide every new feature added to the platform.
+**3. Uncertainty stays visible.**  
+If the data does not establish why something happened, DataSage should say so instead of presenting speculation as fact.
 
 ---
 
-# Vision
+## Vision
 
-DataSage is not trying to become another AI chatbot.
+DataSage is not intended to be another chatbot wrapped around a spreadsheet.
 
-Its goal is to become a trustworthy analytics platform where deterministic computation and selective AI reasoning work together.
+It explores a more reliable architecture for AI-assisted analytics — one where deterministic computation and generative reasoning have clearly separated responsibilities.
 
-Every numerical answer should be:
-
-- Correct
-- Explainable
-- Reproducible
-
-Every AI-generated insight should be grounded in verified analytical results—not generated guesses.
+> **Use AI where reasoning adds value. Use deterministic systems where correctness matters.**
 
 ---
 
-# Author
+## Author
 
 **Raksha Sinha**
 
-Building DataSage to explore how deterministic analytics and selective AI reasoning can work together to create trustworthy, AI-assisted analytics systems.
+Built to explore how deterministic analytics and selective AI reasoning can work together to create trustworthy data-analysis systems.
 
 ---
 
-# License
+## License
 
-This project is licensed under the MIT License.
+Licensed under the [MIT License](LICENSE).
